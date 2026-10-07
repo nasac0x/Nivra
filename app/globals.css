@@ -1,0 +1,126 @@
+@import "tailwindcss";
+
+@layer base {
+  :root {
+    --bg-base: #07080C;
+    --bg-surface-glass-1: rgba(18, 16, 27, 0.72);
+    --bg-surface-glass-2: rgba(14, 15, 22, 0.55);
+    --bg-surface-glass-3: rgba(15, 15, 23, 0.70);
+    --bg-surface-glass-subtle: rgba(255, 255, 255, 0.025);
+    --text-primary: #F0E9FF;
+    --text-secondary: #858593;
+    --text-muted: #5e6070;
+    --accent-purple: #9B4DFF;
+    --accent-purple-light: #C69BFF;
+    --accent-purple-glow: rgba(157, 78, 255, 0.25);
+    --accent-green: #25D39A;
+    --accent-red: #FF5C73;
+    --glass-border: rgba(255, 255, 255, 0.07);
+    --glass-border-subtle: rgba(255, 255, 255, 0.04);
+    --glass-border-active: rgba(157, 78, 255, 0.35);
+  }
+
+  body {
+    background-color: #07080C;
+    color: #F0E9FF;
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11", "tnum";
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    overflow-x: hidden;
+  }
+}
+
+/* Glassmorphism Surface Utility Classes */
+.glass-panel-primary {
+  background: rgba(18, 16, 27, 0.72);
+  backdrop-filter: blur(20px) saturate(140%);
+  -webkit-backdrop-filter: blur(20px) saturate(140%);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.35);
+  position: relative;
+}
+
+@media (max-width: 640px) {
+  .glass-panel-primary {
+    backdrop-filter: blur(14px) saturate(130%);
+    -webkit-backdrop-filter: blur(14px) saturate(130%);
+  }
+}
+
+/* Glass panel top highlight line (specular reflection) */
+.glass-specular::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(157, 78, 255, 0.30), transparent);
+  pointer-events: none;
+}
+
+/* Subtle corner glass reflection */
+.glass-corner-sheen {
+  position: relative;
+}
+.glass-corner-sheen::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(120deg, rgba(255, 255, 255, 0.04), transparent 35%);
+  pointer-events: none;
+  opacity: 0.6;
+}
+
+.glass-panel-secondary {
+  background: rgba(14, 15, 22, 0.55);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+  transition: all 200ms ease;
+}
+
+.glass-panel-secondary:hover {
+  border-color: rgba(255, 255, 255, 0.12);
+  background: rgba(17, 18, 27, 0.65);
+}
+
+.glass-command {
+  background: rgba(15, 15, 23, 0.70);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  box-shadow: 0 15px 40px rgba(0, 0, 0, 0.30);
+}
+
+/* Tabular numbers for financial precision */
+.font-tabular {
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+}
+
+/* Glow for primary revenue figures */
+.text-glow-revenue {
+  color: #F0E9FF;
+  text-shadow: 0 0 35px rgba(157, 78, 255, 0.22);
+}
+
+/* Custom sleek scrollbar */
+::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+::-webkit-scrollbar-track {
+  background: #07080C;
+}
+::-webkit-scrollbar-thumb {
+  background: #1c1a27;
+  border-radius: 2px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #2e2a42;
+}

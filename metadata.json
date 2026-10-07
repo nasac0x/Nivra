@@ -1,0 +1,6 @@
+{
+  "name": "Aura Revenue - Dashboard Financeiro Pessoal",
+  "description": "Dashboard financeiro pessoal modular, persistente e privado para controle, análise e exportação de faturamento com suporte multimoeda (USD, BRL, EUR).",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
