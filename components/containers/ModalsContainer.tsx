@@ -13,6 +13,7 @@ export function ModalsContainer() {
     setUI,
     settings,
     activeCurrency,
+    setActiveCurrency,
     saveTransaction,
     addCategory,
     updateSettings,
@@ -41,6 +42,8 @@ export function ModalsContainer() {
         isOpen={ui.isSettingsOpen}
         onClose={() => setUI({ isSettingsOpen: false })}
         settings={settings}
+        activeCurrency={activeCurrency}
+        onSelectCurrency={setActiveCurrency}
         onSaveSettings={updateSettings}
         autoBackup={autoBackup}
         onExportJSON={exportJSON}

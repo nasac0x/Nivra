@@ -61,7 +61,7 @@ export function MobileHome({ onOpenPage }: { onOpenPage: (p: string) => void }) 
       </div>
 
       {/* ===== Métrica principal (o número da tela) ===== */}
-      <section className="rounded-2xl bg-white/[0.03] border border-white/[0.07] p-5">
+      <section className="glass-panel-primary glass-specular rounded-2xl p-5">
         <p className="text-caption text-[#858593] font-mono uppercase tracking-wider">Receita · {calc.periodInfo.label}</p>
         <p className="text-display font-bold text-[#F0E9FF] font-mono tabular-nums mt-1.5">
           {formatCurrency(calc.currentTotalRevenue, activeCurrency)}
@@ -104,7 +104,7 @@ export function MobileHome({ onOpenPage }: { onOpenPage: (p: string) => void }) 
       <section className="grid grid-cols-2 gap-3">
         <button
           onClick={() => onOpenPage('balanco')}
-          className="rounded-2xl bg-white/[0.03] border border-white/[0.07] p-4 text-left active:scale-[0.98] transition-transform"
+          className="glass-panel-primary rounded-2xl p-4 text-left active:scale-[0.98] transition-transform"
         >
           <p className="text-caption text-[#858593] font-mono uppercase tracking-wider">Média diária</p>
           <p className="text-h3 font-semibold text-[#F0E9FF] font-mono tabular-nums mt-1">
@@ -113,7 +113,7 @@ export function MobileHome({ onOpenPage }: { onOpenPage: (p: string) => void }) 
         </button>
         <button
           onClick={() => onOpenPage('balanco')}
-          className="rounded-2xl bg-white/[0.03] border border-white/[0.07] p-4 text-left active:scale-[0.98] transition-transform"
+          className="glass-panel-primary rounded-2xl p-4 text-left active:scale-[0.98] transition-transform"
         >
           <p className="text-caption text-[#858593] font-mono uppercase tracking-wider">Ticket médio</p>
           <p className="text-h3 font-semibold text-[#F0E9FF] font-mono tabular-nums mt-1">
@@ -122,7 +122,7 @@ export function MobileHome({ onOpenPage }: { onOpenPage: (p: string) => void }) 
         </button>
         <button
           onClick={() => onOpenPage('metas')}
-          className="rounded-2xl bg-white/[0.03] border border-white/[0.07] p-4 text-left active:scale-[0.98] transition-transform"
+          className="glass-panel-primary rounded-2xl p-4 text-left active:scale-[0.98] transition-transform"
         >
           <p className="text-caption text-[#858593] font-mono uppercase tracking-wider">Mês atual</p>
           <p className="text-h3 font-semibold text-[#F0E9FF] font-mono tabular-nums mt-1">
@@ -131,7 +131,7 @@ export function MobileHome({ onOpenPage }: { onOpenPage: (p: string) => void }) 
         </button>
         <button
           onClick={() => onOpenPage('insights')}
-          className="rounded-2xl bg-white/[0.03] border border-white/[0.07] p-4 text-left active:scale-[0.98] transition-transform"
+          className="glass-panel-primary rounded-2xl p-4 text-left active:scale-[0.98] transition-transform"
         >
           <p className="text-caption text-[#858593] font-mono uppercase tracking-wider">Lançamentos</p>
           <p className="text-h3 font-semibold text-[#F0E9FF] font-mono tabular-nums mt-1">
@@ -151,7 +151,7 @@ export function MobileHome({ onOpenPage }: { onOpenPage: (p: string) => void }) 
             Ver tudo <ChevronRight className="w-3.5 h-3.5" />
           </button>
         </div>
-        <div className="rounded-2xl bg-white/[0.03] border border-white/[0.07] px-4 divide-y divide-white/[0.05]">
+        <div className="glass-panel-primary rounded-2xl px-4 divide-y divide-white/[0.05]">
           {recentes.length === 0 ? (
             <p className="py-8 text-center text-small text-[#858593]">
               Nenhum lançamento no período.

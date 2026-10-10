@@ -28,6 +28,8 @@ interface SettingsModalProps {
   isOpen: boolean;
   onClose: () => void;
   settings: UserSettings;
+  activeCurrency?: import('@/types/finance').Currency;
+  onSelectCurrency?: (c: import('@/types/finance').Currency) => void;
   onSaveSettings: (newSettings: UserSettings) => void;
   onExportJSON: () => void;
   onImportJSON: (jsonStr: string) => boolean;
@@ -41,6 +43,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   isOpen,
   onClose,
   settings,
+  activeCurrency,
+  onSelectCurrency,
   onSaveSettings,
   onExportJSON,
   onImportJSON,
@@ -229,6 +233,31 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
           {/* TAB 1: CURRENCIES */}
           {activeTab === 'currencies' && (
             <form onSubmit={handleSaveRates} className="space-y-4">
+              {/* MOEDA ATIVA — seletor rápido (visível no mobile, dentro dos Ajustes) */}
+              <div className="p-3 bg-[#12151D] border border-white/[0.06]">
+                <div className="font-semibold text-[#F2F0F7] uppercase text-[11px] mb-2.5">
+                  Moeda de exibição
+                </div>
+                <div className="grid grid-cols-3 gap-2">
+                  {(['USD', 'BRL', 'EUR'] as const).map((c) => {
+                    const active = activeCurrency === c;
+                    return (
+                      <button
+                        key={c}
+                        type="button"
+                        onClick={() => onSelectCurrency?.(c)}
+                        className={`py-2.5 text-sm font-mono rounded-lg border transition-all ${
+                          active
+                            ? 'bg-[#9B4DFF]/20 border-[#9B4DFF]/50 text-[#F0E9FF] font-semibold'
+                            : 'border-white/[0.08] text-[#A0A0B0] hover:border-[#9B4DFF]/30'
+                        }`}
+                      >
+                        {c === 'USD' ? 'USD ($)' : c === 'BRL' ? 'BRL (R$)' : 'EUR (€)'}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
               <div>
                 <label className="block text-[#858593] text-[10px] uppercase mb-1">
                   MOEDA PADRÃO DO TERMINAL

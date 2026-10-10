@@ -185,7 +185,7 @@ export const NivraIntroAnimation: React.FC<NivraIntroAnimationProps> = ({
 
           <div className="relative z-10 flex flex-col items-center px-4">
             {/* LOCKUP horizontal: símbolo + wordmark */}
-            <div className="flex items-center gap-4 sm:gap-6">
+            <div className="flex items-center gap-2.5 sm:gap-4">
               {/* SÍMBOLO — 3 formas */}
               <div ref={symbolRef} className="relative w-24 sm:w-36" style={{ aspectRatio: '160/120' }}>
                 <svg viewBox="0 0 160 120" className="w-full h-full overflow-visible">
