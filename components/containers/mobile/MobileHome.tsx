@@ -3,11 +3,13 @@
 import React from 'react';
 import { Plus, Search, FileText, TrendingUp, ArrowDownRight, ArrowUpRight, ChevronRight } from 'lucide-react';
 import { useNivra } from '@/components/NivraContext';
-import { formatCurrency } from '@/services/currency';
+import { formatCurrency, convertCurrency } from '@/services/currency';
 
 /** Bloco de atividade recente (lista estilo fintech). */
-function ActivityRow({ desc, amount, date, currency }: { desc: string; amount: number; date: string; currency: any }) {
+function ActivityRow({ desc, amount, fromCurrency, date, currency, rates }: { desc: string; amount: number; fromCurrency: any; date: string; currency: any; rates: any }) {
   const positive = amount >= 0;
+  // converte da moeda de ORIGEM da transação pra moeda ativa do app
+  const converted = convertCurrency(amount, fromCurrency, currency, rates);
   return (
     <div className="flex items-center gap-3 py-3">
       <span className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${positive ? 'bg-[#9B4DFF]/12 text-[#C69BFF]' : 'bg-white/[0.04] text-[#858593]'}`}>
@@ -18,7 +20,7 @@ function ActivityRow({ desc, amount, date, currency }: { desc: string; amount: n
         <p className="text-caption text-[#858593] font-mono">{date}</p>
       </div>
       <p className={`text-sm font-semibold font-mono tabular-nums ${positive ? 'text-[#F0E9FF]' : 'text-[#858593]'}`}>
-        {formatCurrency(amount, currency)}
+        {formatCurrency(converted, currency)}
       </p>
     </div>
   );
@@ -29,7 +31,7 @@ function ActivityRow({ desc, amount, date, currency }: { desc: string; amount: n
  * resumo operacional → atividades recentes. Sem cara de dashboard.
  */
 export function MobileHome({ onOpenPage }: { onOpenPage: (p: string) => void }) {
-  const { calc, activeCurrency, transactions, openAddModal, ui, setUI } = useNivra();
+  const { calc, activeCurrency, transactions, settings, openAddModal, ui, setUI } = useNivra();
 
   const hour = new Date().getHours();
   const saudacao = hour < 12 ? 'Bom dia' : hour < 18 ? 'Boa tarde' : 'Boa noite';
@@ -160,8 +162,10 @@ export function MobileHome({ onOpenPage }: { onOpenPage: (p: string) => void }) 
                 key={tx.id}
                 desc={tx.description || 'Lançamento'}
                 amount={tx.amount}
+                fromCurrency={tx.currency || 'USD'}
                 date={tx.date}
                 currency={activeCurrency}
+                rates={settings.exchangeRates}
               />
             ))
           )}
