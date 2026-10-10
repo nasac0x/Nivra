@@ -259,6 +259,23 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                 </div>
               </div>
               <div>
+                {/* Estado da cotação — automática diária ou manual (informativo) */}
+                <div className="flex items-center justify-between gap-2 mb-3 p-2.5 bg-white/[0.02] border border-white/[0.06] rounded">
+                  <span className="text-[10px] text-[#858593] uppercase font-semibold tracking-wider">
+                    Cotação
+                  </span>
+                  <span className="text-[10px] font-mono text-right leading-snug">
+                    {settings.exchangeRates.isManual ? (
+                      <span className="text-amber-300">
+                        Manual · {settings.exchangeRates.lastUpdated?.split('T')[0] || '—'}
+                      </span>
+                    ) : (
+                      <span className="text-emerald-300">
+                        Automática · atualizada {settings.exchangeRates.lastUpdated?.split('T')[0] || '—'}
+                      </span>
+                    )}
+                  </span>
+                </div>
                 <label className="block text-[#858593] text-[10px] uppercase mb-1">
                   MOEDA PADRÃO DO TERMINAL
                 </label>

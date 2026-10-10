@@ -29,6 +29,7 @@ import {
   DEFAULT_MODULES,
 } from '@/services/storage';
 import { getStoredProspects, saveStoredProspects } from '@/services/prospect-storage';
+import { fetchOnlineRates } from '@/services/rates';
 import { getLocalTodayString } from '@/services/metrics';
 import { exportToXLSX } from '@/services/export-xlsx';
 import { generatePDF } from '@/services/export-pdf';
@@ -198,6 +199,49 @@ export function NivraProvider({ children }: { children: React.ReactNode }) {
     setSettings(newSettings);
     saveStoredSettings(newSettings);
   }, []);
+
+  // ============================================================
+  // COTAÇÃO ONLINE AUTOMÁTICA (1x/dia, sem chave, com fallback)
+  // - rates com mais de 24h e NÃO manuais → busca na API e aplica
+  // - isManual=true (usuário editou à mão) → nunca sobrescreve
+  // - offline → falha silenciosa, re-tenta na próxima abertura
+  // ============================================================
+  const autoRatesRanRef = useRef(false);
+  useEffect(() => {
+    if (autoRatesRanRef.current) return;
+    autoRatesRanRef.current = true;
+
+    const DAY_MS = 24 * 60 * 60 * 1000;
+
+    const refreshIfStale = async () => {
+      const current = getStoredSettings();
+      const rates = current.exchangeRates;
+      if (rates.isManual) return; // usuário travou as taxas manualmente
+      const last = new Date(rates.lastUpdated || 0).getTime();
+      if (Number.isFinite(last) && Date.now() - last < DAY_MS) return; // fresquinha
+      try {
+        const online = await fetchOnlineRates();
+        const fresh = getStoredSettings(); // re-lê: algo pode ter mudado durante o fetch
+        if (fresh.exchangeRates.isManual) return; // usuário mexeu nesse meio-tempo
+        updateSettings({
+          ...fresh,
+          exchangeRates: {
+            USD_BRL: online.USD_BRL,
+            USD_EUR: online.USD_EUR,
+            EUR_BRL: online.EUR_BRL,
+            lastUpdated: online.fetchedAt,
+            isManual: false,
+          },
+        });
+      } catch {
+        // sem internet / APIs fora — silencioso
+      }
+    };
+
+    void refreshIfStale();
+    const daily = setInterval(() => void refreshIfStale(), DAY_MS);
+    return () => clearInterval(daily);
+  }, [updateSettings]);
 
   // cálculos derivados
   const calc = useRevenueCalculations({
