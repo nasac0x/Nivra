@@ -23,7 +23,7 @@ function Shell() {
     () => true,
     () => false
   );
-  const { ui, cloud } = useNivra();
+  const { ui, setUI, cloud } = useNivra();
 
   if (!isMounted) {
     return (
@@ -49,7 +49,7 @@ function Shell() {
 
       <NivraIntroAnimation
         forceShow={ui.showIntroAnimation}
-        onComplete={() => ui.showIntroAnimation && undefined}
+        onComplete={() => setUI({ showIntroAnimation: false })}
       />
 
       <HeaderContainer />
