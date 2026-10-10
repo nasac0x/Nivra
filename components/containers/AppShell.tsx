@@ -25,6 +25,10 @@ function Shell() {
   );
   const { ui, setUI, cloud } = useNivra();
 
+  const handleIntroComplete = React.useCallback(() => {
+    setUI({ showIntroAnimation: false });
+  }, [setUI]);
+
   if (!isMounted) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-[#07080C] text-[#C69BFF]">
@@ -49,7 +53,7 @@ function Shell() {
 
       <NivraIntroAnimation
         forceShow={ui.showIntroAnimation}
-        onComplete={() => setUI({ showIntroAnimation: false })}
+        onComplete={handleIntroComplete}
       />
 
       <HeaderContainer />

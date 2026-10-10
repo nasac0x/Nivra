@@ -2,21 +2,15 @@
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import gsap from 'gsap';
-import { NivraSymbol, NivraWordmark } from './NivraLogo';
 
 /**
- * NIVRA INTRO — KickStudio-style (referência Dribbble 15213150)
- *
- * Física de movimento, via GSAP timeline:
- * 1. Estado inicial: cada forma geométrica com scale:0/opacity:0;
- *    wordmark oculto atrás de máscara (overflow hidden).
- * 2. Ícone em "pop out": scale 0 → 1.2 → 1 com ease "back.out(1.7)"
- *    (o quique elástico da referência).
- * 3. Stagger: as 3 formas do monograma entram com atraso sequencial 0.1s.
- * 4. Wordmark: desliza de trás do ícone revelando-se pela máscara,
- *    ease "power3.out" — fluido, sem quique.
- *
- * Modo "replay" (forceShow) e dismiss por clique/tecla preservados.
+ * NIVRA INTRO v4 — coreografia decodificada (GIF por pixels + visão + spec):
+ * A) Símbolo: peças nascem perto do centro, expandem sutil e assentam com
+ *    micro-pulso elástico (frames 5-9 da referência).
+ * B) Wordmark: NIVRA entra LETRA POR LETRA subindo da baseline com máscara,
+ *    stagger 55ms, back.out(1.7) — como o texto cresce da esquerda no GIF
+ *    (frames 10-13) e como o spec pede ("masked rise from the baseline").
+ * C) Settle (tagline/progresso) + hold + exit com blur.
  */
 
 interface NivraIntroAnimationProps {
@@ -24,7 +18,17 @@ interface NivraIntroAnimationProps {
   forceShow?: boolean;
 }
 
-const DISMISS_AFTER_MS = 2600;
+const DISMISS_AFTER_MS = 3600;
+const INTRO_KEY = 'nivra_intro_shown_v3';
+
+// Letras do wordmark (paths da fonte geométrica Nivra) — uma por entrada
+const LETTERS: { d: string; w: number }[] = [
+  { d: 'M 10 50 L 10 10 L 22 10 L 46 38 L 46 10 L 58 10 L 58 50 L 46 50 L 22 22 L 22 50 Z', w: 56 },
+  { d: 'M 82 10 L 94 10 L 94 50 L 82 50 Z', w: 16 },
+  { d: 'M 118 10 L 132 10 L 146 42 L 160 10 L 174 10 L 153 50 L 139 50 Z', w: 62 },
+  { d: 'M 196 10 L 226 10 C 238 10 246 16 246 25 C 246 33 239 38 228 39 L 246 50 L 232 50 L 216 40 L 208 40 L 208 50 L 196 50 Z M 208 20 L 208 31 L 224 31 C 230 31 234 29 234 25.5 C 234 22 230 20 224 20 Z', w: 54 },
+  { d: 'M 288 10 L 302 10 L 324 50 L 310 50 L 295 22 L 280 50 L 266 50 Z', w: 62 },
+];
 
 export const NivraIntroAnimation: React.FC<NivraIntroAnimationProps> = ({
   onComplete,
@@ -32,35 +36,38 @@ export const NivraIntroAnimation: React.FC<NivraIntroAnimationProps> = ({
 }) => {
   const [isVisible, setIsVisible] = useState(false);
   const [hasStarted, setHasStarted] = useState(false);
-  const timelineRef = useRef<gsap.core.Timeline | null>(null);
-  /** impede que o duplo-invoke do effect (StrictMode) cancele/re-agende timers */
   const scheduledRef = useRef(false);
+  const timersRef = useRef<Record<'start' | 'dismiss', ReturnType<typeof setTimeout> | undefined>>({ start: undefined, dismiss: undefined });
 
-  // refs dos elementos animados
+  /** agenda um timer por SLOT: substitui apenas o predecessor do mesmo slot */
+  const safeTimeout = useCallback((slot: 'start' | 'dismiss', fn: () => void, ms: number) => {
+    if (timersRef.current[slot]) clearTimeout(timersRef.current[slot]);
+    const t = setTimeout(fn, ms);
+    timersRef.current[slot] = t;
+    return t;
+  }, []);
+
   const overlayRef = useRef<HTMLDivElement>(null);
   const glowRef = useRef<HTMLDivElement>(null);
+  const symbolRef = useRef<HTMLDivElement>(null);
   const shape1Ref = useRef<SVGGElement>(null);
   const shape2Ref = useRef<SVGGElement>(null);
   const shape3Ref = useRef<SVGGElement>(null);
-  const iconWrapRef = useRef<HTMLDivElement>(null);
-  const wordMaskRef = useRef<HTMLDivElement>(null);
-  const wordInnerRef = useRef<HTMLDivElement>(null);
+  const lettersWrapRef = useRef<HTMLDivElement>(null);
+  const letterRefs = useRef<(SVGGElement | null)[]>([]);
   const taglineRef = useRef<HTMLDivElement>(null);
   const taglineDotRef = useRef<HTMLSpanElement>(null);
   const progressRef = useRef<HTMLDivElement>(null);
   const skipHintRef = useRef<HTMLDivElement>(null);
 
   const finish = useCallback(() => {
-    // marca "vista" somente quando a intro de fato encerra
-    try { sessionStorage.setItem('nivra_intro_shown_v2', 'true'); } catch {}
+    try { sessionStorage.setItem(INTRO_KEY, 'true'); } catch {}
     const el = overlayRef.current;
     if (!el) {
       setIsVisible(false);
       if (onComplete) onComplete();
       return;
     }
-
-    // bandeira: a primeira que chegar, desmonta (tween OU timer — não ambos)
     let closed = false;
     const close = () => {
       if (closed) return;
@@ -68,131 +75,96 @@ export const NivraIntroAnimation: React.FC<NivraIntroAnimationProps> = ({
       setIsVisible(false);
       if (onComplete) onComplete();
     };
-
-    // tween de saída (caminho bonito, com blur/scale)
     gsap.to(el, {
-      opacity: 0,
-      scale: 1.04,
-      filter: 'blur(12px)',
-      duration: 0.5,
-      ease: 'power2.in',
-      onComplete: close,
-      overwrite: true,
+      opacity: 0, scale: 1.04, filter: 'blur(12px)',
+      duration: 0.5, ease: 'power2.in',
+      onComplete: close, overwrite: true,
     });
-
-    // guarda-raiames: se o tween congelar (aba oculta, RAF suspenso,
-    // device bateria-saver), desmonta na marra após 900ms.
     setTimeout(close, 900);
   }, [onComplete]);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
     let alreadyShown = false;
-    try { alreadyShown = Boolean(sessionStorage.getItem('nivra_intro_shown_v2')); } catch {}
+    try { alreadyShown = Boolean(sessionStorage.getItem(INTRO_KEY)); } catch {}
 
     if (alreadyShown && !forceShow) {
       if (onComplete) onComplete();
       return;
     }
+    // replay tem effect próprio — não duplicar agenda aqui
+    if (forceShow) return;
 
-    if (scheduledRef.current && !forceShow) return; // já agendado nesta vida da página
+    if (scheduledRef.current) return;
     scheduledRef.current = true;
 
-    const startTimer = setTimeout(() => {
+    safeTimeout('start', () => {
       setHasStarted(true);
       setIsVisible(true);
     }, 10);
-
-    const dismissTimer = setTimeout(finish, DISMISS_AFTER_MS);
+    safeTimeout('dismiss', finish, DISMISS_AFTER_MS);
     const onKey = () => finish();
     window.addEventListener('keydown', onKey);
+  }, [forceShow, finish, onComplete, safeTimeout]);
 
-    // SEM cleanup de timers: o StrictMode não pode cancelar o dismiss.
-    // (o keydown listener vaza 1x no dev, custo zero na prática)
-  }, [forceShow, finish, onComplete]);
+  // ===== REPLAY =====
+  useEffect(() => {
+    if (!forceShow) return;
+    safeTimeout('start', () => {
+      setHasStarted(true);
+      setIsVisible(true);
+    }, 30);
+    safeTimeout('dismiss', finish, DISMISS_AFTER_MS + 30);
+  }, [forceShow, finish, safeTimeout]);
 
-  // ===== A TIMELINE PRINCIPAL (roda quando o overlay entra no DOM) =====
+  // ===== TIMELINE MESTRE =====
   useEffect(() => {
     if (!isVisible || !overlayRef.current) return;
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+
+    const letters = letterRefs.current.filter(Boolean) as SVGGElement[];
 
     const tl = gsap.timeline({ defaults: { ease: 'power3.out' } });
-    timelineRef.current = tl;
 
-    // ------- 1. ESTADO INICIAL (estado final declarado no JSX base = animado;
-    // aqui setamos o estado zero ANTES de tudo) -------
+    gsap.set(letters, { clearProps: 'all' });
+    gsap.set(overlayRef.current, { clearProps: 'opacity,scale,filter' });
+
+    // ---------- A) SÍMBOLO ----------
     tl.set([shape1Ref.current, shape2Ref.current, shape3Ref.current], {
-      scale: 0,
-      opacity: 0,
-      transformOrigin: '50% 60%',
-      svgOrigin: '80 60',
+      opacity: 0, scale: 0.35,
+      x: (i: number) => (i === 0 ? -16 : i === 1 ? 12 : 18),
+      y: (i: number) => (i === 0 ? 0 : i === 1 ? -9 : 11),
     });
-    tl.set(iconWrapRef.current, { scale: 0.7, opacity: 0 });
-    tl.set(wordInnerRef.current, { xPercent: -110, opacity: 0 });
-    tl.set([taglineRef.current, progressRef.current, skipHintRef.current, glowRef.current], {
-      opacity: 0,
-    });
+    tl.set(symbolRef.current, { opacity: 0, scale: 0.92 });
+    tl.set([taglineRef.current, progressRef.current, skipHintRef.current, glowRef.current], { opacity: 0 });
     tl.set(progressRef.current, { width: 0 });
     tl.set(taglineDotRef.current, { scale: 0 });
+    tl.set(letters, { yPercent: 115, opacity: 0 });
 
-    // ------- 2+3. ÍCONE: pop-out elástico por forma, stagger 0.1s -------
-    tl.to(iconWrapRef.current, {
-      scale: 1,
-      opacity: 1,
-      duration: 0.35,
-      ease: 'power2.out',
-    });
+    tl.to(symbolRef.current, { opacity: 1, scale: 1, duration: 0.3, ease: 'power2.out' });
 
-    // cada forma geométrica: 0 → 1.2 → 1 (back.out = o quique da referência)
-    tl.to(
-      [shape1Ref.current, shape2Ref.current, shape3Ref.current],
-      {
-        scale: 1.2,
-        opacity: 1,
-        duration: 0.55,
-        ease: 'back.out(1.7)',
-        stagger: 0.1,
-        svgOrigin: '80 60',
-      },
-      '-=0.1'
-    );
-    tl.to(
-      [shape1Ref.current, shape2Ref.current, shape3Ref.current],
-      {
-        scale: 1,
-        duration: 0.4,
-        ease: 'elastic.out(1, 0.45)',
-        svgOrigin: '80 60',
-        stagger: 0.06,
-      },
-      '>-0.15'
-    );
+    tl.to([shape1Ref.current, shape2Ref.current, shape3Ref.current], {
+      opacity: 1, scale: 1, x: 0, y: 0,
+      duration: 0.85, ease: 'power2.out', stagger: 0.09,
+    }, '-=0.05');
 
-    // brilho ambiente acende junto
-    tl.to(glowRef.current, { opacity: 1, duration: 0.9, ease: 'power1.out' }, 0.2);
+    tl.to(symbolRef.current, { scale: 1.04, duration: 0.16, ease: 'power2.in' }, '+=0.06');
+    tl.to(symbolRef.current, { scale: 1, duration: 0.6, ease: 'elastic.out(1, 0.5)' });
+    tl.to(glowRef.current, { opacity: 1, duration: 0.8, ease: 'power1.out' }, '<');
 
-    // ------- 4. WORDMARK: desliza de trás do ícone pela máscara -------
-    tl.to(
-      wordInnerRef.current,
-      {
-        xPercent: 0,
-        opacity: 1,
-        duration: 0.75,
-        ease: 'power3.out',
-      },
-      '-=0.45'
-    );
+    // ---------- B) WORDMARK: letra por letra da baseline ----------
+    tl.to(letters, {
+      yPercent: 0, opacity: 1,
+      duration: 0.6, ease: 'back.out(1.7)', stagger: 0.055,
+    }, '-=0.55');
 
-    // tagline + ponto pulsante
-    tl.to(taglineRef.current, { opacity: 1, y: 0, duration: 0.45 }, '-=0.25');
+    // ---------- C) SETTLE ----------
+    tl.to(taglineRef.current, { opacity: 1, y: 0, duration: 0.45 }, '-=0.2');
     tl.to(taglineDotRef.current, { scale: 1, duration: 0.3, ease: 'back.out(2)' }, '<');
     tl.to(progressRef.current, { width: 150, opacity: 0.5, duration: 0.9, ease: 'power2.out' }, '<');
+    tl.to(skipHintRef.current, { opacity: 0.65, duration: 0.4 }, '+=0.1');
 
-    // hint de skip
-    tl.to(skipHintRef.current, { opacity: 0.65, duration: 0.4 }, '+=0.15');
-
-    return () => {
-      tl.kill();
-    };
+    return () => { tl.kill(); };
   }, [isVisible]);
 
   if (!hasStarted) return null;
@@ -206,81 +178,66 @@ export const NivraIntroAnimation: React.FC<NivraIntroAnimationProps> = ({
           className="fixed inset-0 z-[99999] flex flex-col items-center justify-center bg-[#07080C] select-none cursor-pointer overflow-hidden"
           style={{ willChange: 'opacity, transform, filter' }}
         >
-          {/* Atmosfera cósmica roxa */}
           <div
             ref={glowRef}
             className="absolute w-[600px] sm:w-[800px] h-[400px] sm:h-[500px] rounded-full bg-gradient-to-r from-[#9B4DFF]/25 via-[#7C3AED]/30 to-[#B377FF]/20 blur-[130px] pointer-events-none"
           />
 
-          {/* Conjunto central: ícone + wordmark */}
           <div className="relative z-10 flex flex-col items-center px-4">
-            {/* ÍCONE — 3 formas geométricas independentes p/ stagger */}
-            <div
-              ref={iconWrapRef}
-              className="relative w-40 h-30 sm:w-52 sm:h-39"
-              style={{ aspectRatio: '160/120' }}
-            >
-              <svg viewBox="0 0 160 120" className="w-full h-full overflow-visible">
-                <defs>
-                  <linearGradient id="intro-nivra-grad" x1="10" y1="90" x2="150" y2="10" gradientUnits="userSpaceOnUse">
-                    <stop offset="0%" stopColor="#8534F5" />
-                    <stop offset="60%" stopColor="#9B4DFF" />
-                    <stop offset="100%" stopColor="#B377FF" />
-                  </linearGradient>
-                </defs>
-                {/* 1. Fita principal do N (grande forma) */}
-                <g ref={shape1Ref} style={{ willChange: 'transform, opacity' }}>
-                  <path
-                    d="M 12 92 L 48 24 L 72 24 L 98 72 L 98 52 L 126 12 L 148 4 L 122 52 L 102 92 L 78 92 L 52 48 L 34 84 Z"
-                    fill="url(#intro-nivra-grad)"
-                  />
-                </g>
-                {/* 2. Barra de aceleração 1 */}
-                <g ref={shape2Ref} style={{ willChange: 'transform, opacity' }}>
-                  <path d="M 72 44 L 84 24 L 94 24 L 82 44 Z" fill="url(#intro-nivra-grad)" />
-                </g>
-                {/* 3. Barra de aceleração 2 */}
-                <g ref={shape3Ref} style={{ willChange: 'transform, opacity' }}>
-                  <path d="M 88 56 L 104 28 L 114 28 L 98 56 Z" fill="url(#intro-nivra-grad)" />
-                </g>
-              </svg>
+            {/* LOCKUP horizontal: símbolo + wordmark */}
+            <div className="flex items-center gap-4 sm:gap-6">
+              {/* SÍMBOLO — 3 formas */}
+              <div ref={symbolRef} className="relative w-24 sm:w-36" style={{ aspectRatio: '160/120' }}>
+                <svg viewBox="0 0 160 120" className="w-full h-full overflow-visible">
+                  <defs>
+                    <linearGradient id="intro-grad" x1="10" y1="90" x2="150" y2="10" gradientUnits="userSpaceOnUse">
+                      <stop offset="0%" stopColor="#8534F5" />
+                      <stop offset="60%" stopColor="#9B4DFF" />
+                      <stop offset="100%" stopColor="#B377FF" />
+                    </linearGradient>
+                  </defs>
+                  <g ref={shape1Ref} style={{ willChange: 'transform, opacity' }}>
+                    <path d="M 12 92 L 48 24 L 72 24 L 98 72 L 98 52 L 126 12 L 148 4 L 122 52 L 102 92 L 78 92 L 52 48 L 34 84 Z" fill="url(#intro-grad)" />
+                  </g>
+                  <g ref={shape2Ref} style={{ willChange: 'transform, opacity' }}>
+                    <path d="M 72 44 L 84 24 L 94 24 L 82 44 Z" fill="url(#intro-grad)" />
+                  </g>
+                  <g ref={shape3Ref} style={{ willChange: 'transform, opacity' }}>
+                    <path d="M 88 56 L 104 28 L 114 28 L 98 56 Z" fill="url(#intro-grad)" />
+                  </g>
+                </svg>
+              </div>
 
-              {/* Glow do ícone montado */}
-              <div className="absolute inset-0 bg-[#9B4DFF]/20 blur-[38px] rounded-full pointer-events-none" />
-            </div>
-
-            {/* WORDMARK — máscara de corte + slide out */}
-            <div
-              ref={wordMaskRef}
-              className="mt-3 overflow-hidden"
-              style={{ clipPath: 'inset(0 100% 0 0 round 0px)' }}
-            >
-              <div ref={wordInnerRef} style={{ willChange: 'transform, opacity' }}>
-                <NivraWordmark className="h-9 sm:h-10" fillColor="#F0E9FF" />
+              {/* WORDMARK — máscara de baseline + letras individuais */}
+              <div
+                ref={lettersWrapRef}
+                className="overflow-hidden"
+                style={{ paddingBottom: '2px' }}
+              >
+                <svg viewBox="0 0 340 60" className="h-9 sm:h-11 overflow-visible">
+                  {LETTERS.map((L, i) => (
+                    <g
+                      key={i}
+                      ref={(el: SVGGElement | null) => { letterRefs.current[i] = el; }}
+                      style={{ willChange: 'transform, opacity' }}
+                    >
+                      <path d={L.d} fill="#F0E9FF" />
+                    </g>
+                  ))}
+                </svg>
               </div>
             </div>
 
             {/* Tagline */}
-            <div
-              ref={taglineRef}
-              className="mt-4 flex items-center gap-2 text-[10px] sm:text-xs font-mono tracking-[0.3em] text-[#C69BFF]/80 uppercase"
-            >
+            <div ref={taglineRef} className="mt-6 flex items-center gap-2 text-[10px] sm:text-xs font-mono tracking-[0.3em] text-[#C69BFF]/80 uppercase">
               <span ref={taglineDotRef} className="w-1.5 h-1.5 rounded-full bg-[#10B981] animate-pulse" />
               <span>RECEITAS & PROSPECÇÃO</span>
             </div>
 
-            {/* Linha de progresso */}
-            <div
-              ref={progressRef}
-              className="mt-5 h-[1.5px] bg-gradient-to-r from-transparent via-[#9B4DFF] to-transparent rounded-full shadow-[0_0_12px_#9B4DFF]"
-            />
+            <div ref={progressRef} className="mt-5 h-[1.5px] bg-gradient-to-r from-transparent via-[#9B4DFF] to-transparent rounded-full shadow-[0_0_12px_#9B4DFF]" />
           </div>
 
-          {/* Skip hint */}
-          <div
-            ref={skipHintRef}
-            className="absolute bottom-8 text-[11px] font-mono text-[#858593] hover:text-white transition-colors"
-          >
+          <div ref={skipHintRef} className="absolute bottom-8 text-[11px] font-mono text-[#858593] hover:text-white transition-colors">
             Clique ou pressione qualquer tecla para continuar
           </div>
         </div>
