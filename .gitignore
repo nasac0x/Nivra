@@ -5,3 +5,7 @@ coverage/
 *.log
 .env*
 !.env.example
+
+# artefatos internos (review/design QA)
+.impeccable/
+tsconfig.tsbuildinfo

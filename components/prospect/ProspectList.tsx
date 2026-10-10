@@ -22,6 +22,7 @@ import {
   PROSPECT_STATUSES,
   PROSPECT_CATEGORIES,
 } from '@/types/prospect';
+import { analyzePhone } from '@/lib/phone';
 
 interface ProspectListProps {
   prospects: Prospect[];
@@ -258,8 +259,8 @@ export const ProspectList: React.FC<ProspectListProps> = ({
                 </thead>
                 <tbody className="divide-y divide-white/[0.04]">
                   {filteredProspects.map((prospect) => {
-                    const cleanPhone = (prospect.phone || '').replace(/\D/g, '');
-                    const whatsappUrl = cleanPhone ? `https://wa.me/${cleanPhone}` : null;
+                    const phoneInfo = analyzePhone(prospect.phone || '');
+                    const whatsappUrl = phoneInfo.whatsappUrl;
                     const lastInteraction =
                       prospect.interactions && prospect.interactions.length > 0
                         ? prospect.interactions[prospect.interactions.length - 1]
@@ -319,6 +320,14 @@ export const ProspectList: React.FC<ProspectListProps> = ({
                           {prospect.phone ? (
                             <div className="flex items-center gap-1.5">
                               <span>{prospect.phone}</span>
+                              {!phoneInfo.hadCountryCode && whatsappUrl && (
+                                <span
+                                  className="text-amber-400"
+                                  title={`Número salvo sem código do país — assumido +${phoneInfo.country}. Recomendado: edite e salve com o DDI (ex: +55 / +351).`}
+                                >
+                                  <AlertTriangle className="w-3 h-3" />
+                                </span>
+                              )}
                               {whatsappUrl && (
                                 <a
                                   href={whatsappUrl}
@@ -434,8 +443,8 @@ export const ProspectList: React.FC<ProspectListProps> = ({
             {/* Mobile Card List (Visible only on mobile screens) */}
             <div className="md:hidden divide-y divide-white/[0.04]">
               {filteredProspects.map((prospect) => {
-                const cleanPhone = (prospect.phone || '').replace(/\D/g, '');
-                const whatsappUrl = cleanPhone ? `https://wa.me/${cleanPhone}` : null;
+                const phoneInfo = analyzePhone(prospect.phone || '');
+                const whatsappUrl = phoneInfo.whatsappUrl;
                 const lastInteraction =
                   prospect.interactions && prospect.interactions.length > 0
                     ? prospect.interactions[prospect.interactions.length - 1]

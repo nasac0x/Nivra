@@ -18,6 +18,7 @@ import {
   Navigation,
 } from 'lucide-react';
 import { Prospect, ProspectStatus, ProspectInteraction, PROSPECT_STATUSES } from '@/types/prospect';
+import { analyzePhone } from '@/lib/phone';
 
 interface ProspectDetailsModalProps {
   prospect: Prospect | null;
@@ -64,9 +65,9 @@ export const ProspectDetailsModal: React.FC<ProspectDetailsModalProps> = ({
     setIsAddingInteraction(false);
   };
 
-  // WhatsApp formatted link
-  const cleanPhone = (prospect.phone || '').replace(/\D/g, '');
-  const whatsappUrl = cleanPhone ? `https://wa.me/${cleanPhone}` : null;
+  // WhatsApp formatted link — normalizado com suporte internacional
+  const phoneInfo = analyzePhone(prospect.phone || '');
+  const whatsappUrl = phoneInfo.whatsappUrl;
 
   return (
     <div className="fixed inset-0 z-[999] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-150">
@@ -253,8 +254,16 @@ export const ProspectDetailsModal: React.FC<ProspectDetailsModalProps> = ({
 
             <div>
               <span className="text-[10px] text-[#858593] block">Telefone</span>
-              <span className="text-white font-medium text-xs">
+              <span className="text-white font-medium text-xs flex items-center gap-1.5">
                 {prospect.phone || '—'}
+                {!phoneInfo.hadCountryCode && whatsappUrl && (
+                  <span
+                    className="text-amber-400"
+                    title={`Número sem código do país — assumido +${phoneInfo.country} no link do WhatsApp. Edite e salve com o DDI (ex: +55 / +351) para ficar confiável.`}
+                  >
+                    <AlertCircle className="w-3 h-3" />
+                  </span>
+                )}
               </span>
             </div>
 

@@ -3,6 +3,7 @@
 import React, { useState, useRef } from 'react';
 import { X, Check, Building2, Tag, Phone, Globe, User, MapPin, AlignLeft, Mail, GripHorizontal } from 'lucide-react';
 import { Prospect, ProspectStatus, PROSPECT_CATEGORIES, PROSPECT_STATUSES } from '@/types/prospect';
+import { normalizePhoneOnSave } from '@/lib/phone';
 import Draggable from 'react-draggable';
 
 interface ProspectModalProps {
@@ -44,7 +45,7 @@ const ProspectForm: React.FC<ProspectFormProps> = ({ initialProspect, onClose, o
       category: category.trim() || 'Outros',
       status,
       contactName: contactName.trim() || undefined,
-      phone: phone.trim() || undefined,
+      phone: normalizePhoneOnSave(phone) || undefined,
       email: email.trim() || undefined,
       website: website.trim() || undefined,
       city: city.trim() || undefined,
@@ -161,9 +162,20 @@ const ProspectForm: React.FC<ProspectFormProps> = ({ initialProspect, onClose, o
               type="text"
               value={phone}
               onChange={(e) => setPhone(e.target.value)}
-              placeholder="Ex: +55 21 98844-1234"
+              onBlur={(e) => {
+                // Sugere o formato internacional ao sair do campo
+                const normalized = normalizePhoneOnSave(e.target.value);
+                if (normalized && normalized !== e.target.value) setPhone(normalized);
+              }}
+              placeholder="+55 21 98844-1234 ou +351 912 345 678"
               className="w-full px-3 py-2 bg-white/[0.03] border border-white/10 rounded-md text-[#F0E9FF] placeholder:text-[#858593]/60 focus:outline-none focus:border-[#9B4DFF]"
             />
+            {phone && !phone.trim().startsWith('+') && (
+              <p className="text-[10px] text-amber-400/90 mt-1 leading-snug">
+                Dica: salve com o código do país (+55, +351...) para o WhatsApp
+                funcionar em prospecção internacional.
+              </p>
+            )}
           </div>
         </div>
 

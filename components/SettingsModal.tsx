@@ -14,7 +14,15 @@ import {
   Upload,
   ShieldCheck,
   RotateCcw,
+  HardDriveDownload,
 } from 'lucide-react';
+
+interface AutoBackupController {
+  status: 'unsupported' | 'off' | 'configured' | 'active';
+  lastBackupAt: string | null;
+  enable: () => Promise<boolean>;
+  disable: () => Promise<void>;
+}
 
 interface SettingsModalProps {
   isOpen: boolean;
@@ -26,6 +34,7 @@ interface SettingsModalProps {
   onClearAllData: () => void;
   onResetLayout: () => void;
   onReplayIntro?: () => void;
+  autoBackup?: AutoBackupController;
 }
 
 export const SettingsModal: React.FC<SettingsModalProps> = ({
@@ -38,6 +47,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   onClearAllData,
   onResetLayout,
   onReplayIntro,
+  autoBackup,
 }) => {
 
   const [activeTab, setActiveTab] = useState<'currencies' | 'categories' | 'backup' | 'danger'>('currencies');
@@ -372,6 +382,69 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                   ARMAZENAMENTO LOCAL PRIVADO: Todos os registros permanecem salvos unicamente na memória deste navegador (localStorage).
                 </p>
               </div>
+
+              {/* Auto-Backup Local (pasta do usuário, a cada 3 min) */}
+              {autoBackup && (
+                <div className="p-3 bg-[#12151D] border border-white/[0.06] space-y-2">
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="font-semibold text-[#F2F0F7] uppercase text-[11px] flex items-center gap-1.5">
+                      <HardDriveDownload className="w-3.5 h-3.5 text-[#9B4DFF]" />
+                      AUTO-BACKUP NA PASTA DO PC
+                    </div>
+                    {autoBackup.status === 'active' && (
+                      <span className="flex items-center gap-1.5 text-[10px] text-emerald-300 font-mono">
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                        ATIVO
+                      </span>
+                    )}
+                  </div>
+
+                  {autoBackup.status === 'unsupported' ? (
+                    <div className="text-[10px] text-[#858593] leading-relaxed">
+                      <p>
+                        Seu navegador não permite salvar em pasta local. Use o backup
+                        .json manual acima.
+                      </p>
+                      <p className="mt-1.5 text-[#C5BEDA]">
+                        <strong>No Brave:</strong> a API de pastas vem desligada por
+                        padrão (decisão de segurança deles). Ative em{' '}
+                        <code className="text-[#9B4DFF]">brave://flags/#file-system-access-api</code>{' '}
+                        → Enabled → reinicie o navegador.
+                      </p>
+                    </div>
+                  ) : (
+                    <>
+                      <p className="text-[10px] text-[#858593] leading-relaxed">
+                        Escolha uma pasta UMA vez — o Nivra salva sozinho
+                        <span className="text-[#C5BEDA]"> a cada 3 minutos</span> um
+                        arquivo <span className="text-[#C5BEDA]">nivra-autobackup.json</span>{' '}
+                        (mantém também a versão anterior; nunca enche o disco).
+                      </p>
+                      {autoBackup.lastBackupAt && (
+                        <p className="text-[10px] text-emerald-300/80 font-mono">
+                          Último backup: {new Date(autoBackup.lastBackupAt).toLocaleTimeString('pt-BR')}
+                        </p>
+                      )}
+                      {autoBackup.status === 'active' || autoBackup.status === 'configured' ? (
+                        <button
+                          onClick={() => autoBackup.disable()}
+                          className="flex items-center justify-center gap-2 w-full py-1.5 bg-[#0D0F15] hover:bg-rose-950/40 text-rose-300 border border-rose-500/25 hover:border-rose-500/50 transition-colors"
+                        >
+                          <span>PARAR AUTO-BACKUP</span>
+                        </button>
+                      ) : (
+                        <button
+                          onClick={() => autoBackup.enable()}
+                          className="flex items-center justify-center gap-2 w-full py-1.5 bg-[#0D0F15] hover:bg-white/[0.04] text-[#F2F0F7] border border-white/[0.1] hover:border-[#9B4DFF]/50 transition-colors"
+                        >
+                          <HardDriveDownload className="w-3 h-3 text-[#9B4DFF]" />
+                          <span>ESCOLHER PASTA E ATIVAR</span>
+                        </button>
+                      )}
+                    </>
+                  )}
+                </div>
+              )}
 
               {/* Visuals & Intro Animation */}
               <div className="p-3 bg-[#12151D] border border-white/[0.06] flex items-center justify-between flex-wrap gap-2">

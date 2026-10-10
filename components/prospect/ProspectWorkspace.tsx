@@ -47,6 +47,11 @@ const handleMapSizeChange = (newSize: 'compact' | 'normal' | 'expanded' | 'colla
   const [lastDeletedProspect, setLastDeletedProspect] = useState<Prospect | null>(null);
   const [showUndoToast, setShowUndoToast] = useState(false);
 
+  // Modal states (declarados antes do listener que os usa)
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [editingProspect, setEditingProspect] = useState<Prospect | null>(null);
+  const [selectedDetailsProspect, setSelectedDetailsProspect] = useState<Prospect | null>(null);
+
   // Ouvinte para preencher automaticamente o modal quando clicar em adicionar um lugar do mapa
   useEffect(() => {
     const handleAddPlace = (e: any) => {
@@ -76,10 +81,14 @@ const handleMapSizeChange = (newSize: 'compact' | 'normal' | 'expanded' | 'colla
     return () => window.removeEventListener('nivra-add-place-to-prospect', handleAddPlace);
   }, []);
 
-  // Modal states
-  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
-  const [editingProspect, setEditingProspect] = useState<Prospect | null>(null);
-  const [selectedDetailsProspect, setSelectedDetailsProspect] = useState<Prospect | null>(null);
+  // Backup importado (Settings > Backup): recarrega a lista do storage
+  useEffect(() => {
+    const handleImported = () => {
+      setProspects(getStoredProspects());
+    };
+    window.addEventListener('nivra-prospects-imported', handleImported);
+    return () => window.removeEventListener('nivra-prospects-imported', handleImported);
+  }, []);
 
   // Map center sync
   const [mapCenter, setMapCenter] = useState<{ lat: number; lng: number } | null>(null);
@@ -244,7 +253,7 @@ const handleMapSizeChange = (newSize: 'compact' | 'normal' | 'expanded' | 'colla
         <div className="p-3.5 bg-white/[0.02] border border-white/[0.06] rounded-xl flex items-center justify-between">
           <div>
             <span className="text-[10.5px] text-[#858593] uppercase tracking-wider block">
-              Total Prospects
+              Total de prospects
             </span>
             <span className="text-xl font-bold text-[#F0E9FF] mt-0.5 block">
               {totalCount}
@@ -258,7 +267,7 @@ const handleMapSizeChange = (newSize: 'compact' | 'normal' | 'expanded' | 'colla
         <div className="p-3.5 bg-white/[0.02] border border-white/[0.06] rounded-xl flex items-center justify-between">
           <div>
             <span className="text-[10.5px] text-[#858593] uppercase tracking-wider block">
-              Na Lista / A Fazer
+              Na lista / A fazer
             </span>
             <span className="text-xl font-bold text-amber-300 mt-0.5 block">
               {inListCount}
@@ -272,7 +281,7 @@ const handleMapSizeChange = (newSize: 'compact' | 'normal' | 'expanded' | 'colla
         <div className="p-3.5 bg-white/[0.02] border border-white/[0.06] rounded-xl flex items-center justify-between">
           <div>
             <span className="text-[10.5px] text-[#858593] uppercase tracking-wider block">
-              Em Contato / Negociação
+              Em contato / Negociação
             </span>
             <span className="text-xl font-bold text-cyan-300 mt-0.5 block">
               {inProgressCount}

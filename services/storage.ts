@@ -1,4 +1,5 @@
 import { Transaction, UserSettings, ModuleConfig } from '@/types/finance';
+import { Prospect } from '@/types/prospect';
 import { DEFAULT_EXCHANGE_RATES } from './currency';
 import { getLocalTodayString } from './metrics';
 
@@ -125,12 +126,17 @@ export function saveStoredSettings(settings: UserSettings): void {
   }
 }
 
-export function exportBackupJSON(transactions: Transaction[], settings: UserSettings): void {
+export function exportBackupJSON(
+  transactions: Transaction[],
+  settings: UserSettings,
+  prospects?: Prospect[]
+): void {
   const data = {
-    version: '1.0',
+    version: '1.1', // 1.1 = agora inclui prospects (retrocompatível: ausente = lista vazia)
     exportedAt: new Date().toISOString(),
     transactions,
     settings,
+    prospects: prospects || [],
   };
   const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
   const url = URL.createObjectURL(blob);
@@ -144,7 +150,9 @@ export function exportBackupJSON(transactions: Transaction[], settings: UserSett
   URL.revokeObjectURL(url);
 }
 
-export function importBackupJSON(jsonStr: string): { transactions: Transaction[]; settings: UserSettings } | null {
+export function importBackupJSON(
+  jsonStr: string
+): { transactions: Transaction[]; settings: UserSettings; prospects: Prospect[] } | null {
   try {
     const parsed = JSON.parse(jsonStr);
     if (!parsed || !Array.isArray(parsed.transactions)) {
@@ -161,9 +169,17 @@ export function importBackupJSON(jsonStr: string): { transactions: Transaction[]
       ...(parsed.settings || {}),
     };
 
+    // Prospects: só existem no formato >= 1.1; backups antigos importam como []
+    const validProspects: Prospect[] = Array.isArray(parsed.prospects)
+      ? parsed.prospects.filter(
+          (p: any) => p && typeof p.id === 'string' && typeof p.name === 'string'
+        )
+      : [];
+
     return {
       transactions: validTransactions,
       settings: mergedSettings,
+      prospects: validProspects,
     };
   } catch (err) {
     console.error('Erro ao importar backup JSON', err);
