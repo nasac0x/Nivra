@@ -163,3 +163,23 @@ nav { -webkit-user-select: none; user-select: none; }
 [data-env="desktop"] .hidden.md\:flex { display: flex !important; }
 [data-env="desktop"] .hidden.md\:block { display: block !important; }
 [data-env="desktop"] .hidden.md\:inline-flex { display: inline-flex !important; }
+
+/* ============================================================
+   PERÍODOS DO HEADER — 1 linha em qualquer largura (desktop):
+   - espaço largo  (>=1240px do container): nav completa inline
+   - espaço apertado (<1240px do container): disclosure "Período ▾"
+   Container query nativa — a decisão é pelo espaço REAL do header.
+   ============================================================ */
+.header-topbar { container-type: inline-size; }
+.period-nav-full { display: none; }
+.period-nav-compact { display: none; }
+@container (inline-size >= 1240px) {
+  .period-nav-full { display: flex; }
+}
+@container (inline-size < 1240px) {
+  .period-nav-compact { display: block; }
+}
+
+@container (inline-size < 1000px) {
+  .cta-label { display: none; }
+}
