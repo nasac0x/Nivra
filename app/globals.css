@@ -30,6 +30,25 @@
   }
 }
 
+/* ============================================================
+   AMBIENTES (AppShell seta data-env no <html>):
+   - [data-env="desktop"]: pointer fine (mouse/teclado) → SEMPRE layout
+     desktop, inclusive janela estreita. Nunca vira mobile. Abaixo de
+     60% da tela o layout congela em --min-app-width e corta.
+   - [data-env="mobile"]: pointer coarse + viewport estreita → layout
+     mobile completo (tab bar, FAB, home fintech).
+   Os gates .env-desktop/.env-mobile substituem os breakpoints md:/lg:
+   responsividade dentro do desktop continua via container/space.
+   ============================================================ */
+[data-env="desktop"] .mobile-tabbar { display: none !important; }
+[data-env="desktop"] .env-mobile-only { display: none !important; }
+[data-env="mobile"] .env-desktop-only { display: none !important; }
+[data-env="mobile"] .env-responsive { display: none !important; }
+
+/* Desktop: elementos que em mobile são tabs/toolbar do topbar, aqui
+   aparecem sempre (nada de sumir por breakpoint) */
+[data-env="desktop"] .env-responsive { display: flex !important; }
+
 /* Glassmorphism Surface Utility Classes */
 .glass-panel-primary {
   background: rgba(18, 16, 27, 0.72);

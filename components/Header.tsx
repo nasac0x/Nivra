@@ -72,6 +72,7 @@ export const Header: React.FC<HeaderProps> = ({
 }) => {
 
   const [showExportMenu, setShowExportMenu] = useState(false);
+  const [showPeriodMenu, setShowPeriodMenu] = useState(false);
   const [showCustomDateModal, setShowCustomDateModal] = useState(false);
   const [tempStart, setTempStart] = useState(customRange.start);
   const [tempEnd, setTempEnd] = useState(customRange.end);
@@ -108,10 +109,10 @@ export const Header: React.FC<HeaderProps> = ({
     <>
       <header className="sticky top-0 z-40 w-full border-b border-white/[0.07] bg-[#07080C]/85 backdrop-blur-[20px] select-none transition-all">
         {/* Top Bar */}
-        <div className="mx-auto flex items-center justify-between gap-3 px-4 sm:px-6 lg:px-8 py-3 max-w-[1720px]">
+        <div className="@container mx-auto flex items-center justify-between gap-3 px-4 sm:px-6 lg:px-8 py-3 max-w-[1720px]">
           
           {/* Brand + Workspace Switcher (desktop — mobile usa a saudação da home) */}
-          <div className="hidden md:flex items-center gap-3">
+          <div className="env-desktop-only flex items-center gap-3">
             <div
               className="flex items-center cursor-pointer group hover:opacity-95 transition-opacity"
               onClick={onReplayIntro}
@@ -128,7 +129,7 @@ export const Header: React.FC<HeaderProps> = ({
 
             {/* Workspace Toggle Tabs */}
 
-            <div className="hidden md:flex items-center bg-white/[0.04] border border-white/[0.08] p-0.5 rounded font-mono text-[11px] ml-1 sm:ml-3">
+            <div className="env-desktop-only flex items-center bg-white/[0.04] border border-white/[0.08] p-0.5 rounded font-mono text-[11px] ml-3">
               <button
                 onClick={() => onSelectWorkspace('revenue')}
                 className={`px-2.5 sm:px-3 py-1 transition-all rounded-sm cursor-pointer ${
@@ -153,29 +154,67 @@ export const Header: React.FC<HeaderProps> = ({
             </div>
           </div>
 
-          {/* Desktop Period Selector (Unified Bounding Container) */}
+          {/* Period Selector — bandeja única "Período ▾" quando o espaço aperta.
+              Container query: a decisão é pelo espaço REAL do header,
+              não pela viewport (janela estreita ≠ mobile). */}
           {activeWorkspace === 'revenue' ? (
-            <nav className="hidden md:flex items-center p-1 bg-white/[0.03] border border-white/[0.08] rounded-lg font-mono text-xs shadow-inner backdrop-blur-md">
-              {periods.map((p) => {
-                const isActive = currentPeriod === p.id;
-                return (
-                  <button
-                    key={p.id}
-                    onClick={() => handlePeriodChange(p.id)}
-                    className={`px-2.5 lg:px-3 py-1 text-[11px] rounded transition-all whitespace-nowrap cursor-pointer ${
-                      isActive
-                        ? 'bg-[#9B4DFF]/30 text-[#F0E9FF] border border-[#9B4DFF]/60 font-semibold shadow-[0_0_12px_rgba(155,77,255,0.25)]'
-                        : 'text-[#858593] hover:text-[#F0E9FF] hover:bg-white/[0.04] border border-transparent'
-                    }`}
-                  >
-                    <span>{p.label}</span>
-                  </button>
-                );
-              })}
+            <nav className="env-desktop-only flex items-center gap-1 @container" data-period-nav>
+              {/* bandeja (janela estreita) */}
+              <div className="relative [@container(inline-size>=1200px)]:hidden">
+                <button
+                  onClick={() => setShowPeriodMenu(!showPeriodMenu)}
+                  className="flex items-center gap-1.5 px-2.5 py-1.5 bg-white/[0.03] border border-white/[0.08] rounded-lg font-mono text-[11px] text-[#A0A0B0] hover:text-[#F0E9FF] hover:bg-white/[0.05] cursor-pointer whitespace-nowrap"
+                  title="Selecionar período"
+                >
+                  <Calendar className="w-3.5 h-3.5 text-[#9B4DFF]" />
+                  <span>Período</span>
+                  <span className="text-[#9B4DFF] font-semibold">{periods.find((p) => p.id === currentPeriod)?.label}</span>
+                  <ChevronDown className="w-2.5 h-2.5 opacity-60" />
+                </button>
+                {showPeriodMenu && (
+                  <>
+                    <div className="fixed inset-0 z-40" onClick={() => setShowPeriodMenu(false)} />
+                    <div className="absolute top-full left-0 mt-1.5 z-50 min-w-[170px] py-1.5 bg-[#0E1017] border border-white/[0.12] rounded-lg shadow-2xl backdrop-blur-xl">
+                      {periods.map((p) => (
+                        <button
+                          key={p.id}
+                          onClick={() => { handlePeriodChange(p.id); setShowPeriodMenu(false); }}
+                          className={`w-full text-left px-3.5 py-1.5 font-mono text-[11px] transition-colors cursor-pointer whitespace-nowrap ${
+                            currentPeriod === p.id
+                              ? 'bg-[#9B4DFF]/20 text-[#F0E9FF] font-semibold'
+                              : 'text-[#A0A0B0] hover:bg-white/[0.05] hover:text-[#F0E9FF]'
+                          }`}
+                        >
+                          {p.label}
+                        </button>
+                      ))}
+                    </div>
+                  </>
+                )}
+              </div>
+              {/* nav completa (janela larga) */}
+              <div className="hidden [@container(inline-size>=1200px)]:flex items-center p-1 bg-white/[0.03] border border-white/[0.08] rounded-lg font-mono text-xs shadow-inner backdrop-blur-md">
+                {periods.map((p) => {
+                  const isActive = currentPeriod === p.id;
+                  return (
+                    <button
+                      key={p.id}
+                      onClick={() => handlePeriodChange(p.id)}
+                      className={`px-2.5 py-1 text-[11px] rounded transition-all whitespace-nowrap cursor-pointer ${
+                        isActive
+                          ? 'bg-[#9B4DFF]/30 text-[#F0E9FF] border border-[#9B4DFF]/60 font-semibold shadow-[0_0_12px_rgba(155,77,255,0.25)]'
+                          : 'text-[#858593] hover:text-[#F0E9FF] hover:bg-white/[0.04] border border-transparent'
+                      }`}
+                    >
+                      <span>{p.label}</span>
+                    </button>
+                  );
+                })}
+              </div>
             </nav>
           ) : (
 
-            <div className="hidden md:flex items-center gap-2 font-mono text-xs text-[#858593]">
+            <div className="env-desktop-only flex items-center gap-2 font-mono text-xs text-[#858593]">
               <Compass className="w-3.5 h-3.5 text-[#9B4DFF]" />
               <span className="tracking-wider uppercase text-[11px] text-[#A0A0B0]">
                 Descoberta no Mapa · Registro Manual no CRM
@@ -186,44 +225,19 @@ export const Header: React.FC<HeaderProps> = ({
           {/* Right Area: Currency + CTA + Tools */}
           <div className="flex items-center gap-2.5 sm:gap-3 font-mono text-xs">
             
-            {/* Currency Selector (USD · BRL · EUR) - only needed for revenue */}
-            {activeWorkspace === 'revenue' && (
-              <div className="hidden sm:flex items-center gap-1.5 text-[11px] text-[#858593] px-2.5 py-1 bg-white/[0.02] border border-white/[0.05] rounded">
-                {currencies.map((curr, idx) => {
-                  const isActive = activeCurrency === curr;
-                  return (
-                    <React.Fragment key={curr}>
-                      <button
-                        onClick={() => onSelectCurrency(curr)}
-                        className={`min-w-[26px] py-0.5 transition-colors font-medium text-center cursor-pointer ${
-                          isActive
-                            ? 'text-[#C69BFF] font-bold'
-                            : 'text-[#858593] hover:text-[#F0E9FF]'
-                        }`}
-                      >
-                        {curr}
-                      </button>
-                      {idx < currencies.length - 1 && (
-                        <span className="text-white/20 select-none">·</span>
-                      )}
-                    </React.Fragment>
-                  );
-                })}
-              </div>
-            )}
-
             {/* Desktop Actions for Revenue */}
             {activeWorkspace === 'revenue' && (
-              <div className="hidden lg:flex items-center gap-2.5">
+              <div className="env-desktop-only flex items-center gap-2.5">
                 {/* Export Dropdown */}
                 <div className="relative">
                   <button
                     onClick={() => setShowExportMenu(!showExportMenu)}
-                    className="flex items-center gap-1.5 px-2.5 py-1.5 text-[#858593] hover:text-[#F0E9FF] bg-white/[0.02] hover:bg-white/[0.05] border border-white/[0.06] rounded text-[11px] transition-colors cursor-pointer"
+                    className="flex items-center gap-1.5 p-1.5 text-[#858593] hover:text-[#F0E9FF] bg-white/[0.02] hover:bg-white/[0.05] border border-white/[0.06] rounded transition-colors cursor-pointer"
+                    title="Exportar (Excel, PDF, JSON)"
+                    aria-label="Exportar"
                   >
-                    <Download className="w-3 h-3 text-[#9B4DFF]" />
-                    <span>Exportar</span>
-                    <ChevronDown className="w-2.5 h-2.5 opacity-60" />
+                    <Download className="w-3.5 h-3.5" />
+                    <ChevronDown className="w-2.5 h-2.5 opacity-60 [@container(inline-size<1100px)]:hidden" />
                   </button>
 
                   {showExportMenu && (
@@ -305,15 +319,15 @@ export const Header: React.FC<HeaderProps> = ({
                 {/* Edit Layout */}
                 <button
                   onClick={onToggleEditMode}
-                  className={`flex items-center gap-1.5 px-2.5 py-1.5 text-[11px] rounded border transition-all cursor-pointer ${
+                  className={`flex items-center p-1.5 rounded border transition-all cursor-pointer ${
                     isEditMode
-                      ? 'bg-[#9B4DFF]/20 border-[#9B4DFF]/50 text-[#C69BFF] font-semibold'
+                      ? 'bg-[#9B4DFF]/20 border-[#9B4DFF]/50 text-[#C69BFF]'
                       : 'text-[#858593] hover:text-[#F0E9FF] bg-white/[0.02] border-white/[0.06] hover:bg-white/[0.05]'
                   }`}
                   title="Organizar layout"
+                  aria-label="Layout"
                 >
-                  <SlidersHorizontal className="w-3 h-3" />
-                  <span>Layout</span>
+                  <SlidersHorizontal className="w-3.5 h-3.5" />
                 </button>
               </div>
             )}
@@ -354,7 +368,7 @@ export const Header: React.FC<HeaderProps> = ({
             {/* Ajustes: engrenagem — desktop only (no mobile são os 3 tracinhos da home) */}
             <button
               onClick={onOpenSettings}
-              className="hidden md:block p-1.5 text-[#858593] hover:text-white bg-white/[0.02] hover:bg-white/[0.05] border border-white/[0.06] rounded transition-colors cursor-pointer"
+              className="env-desktop-only block p-1.5 text-[#858593] hover:text-white bg-white/[0.02] hover:bg-white/[0.05] border border-white/[0.06] rounded transition-colors cursor-pointer"
               title="Ajustes e Metas"
               aria-label="Ajustes"
             >
@@ -365,10 +379,11 @@ export const Header: React.FC<HeaderProps> = ({
             {activeWorkspace === 'revenue' && (
               <button
                 onClick={onOpenAddModal}
-                className="hidden md:flex items-center gap-1.5 px-3.5 py-1.5 bg-gradient-to-br from-[#9B4DFF] to-[#7C3AED] hover:brightness-110 text-white text-[11px] font-mono font-semibold tracking-tight rounded border border-white/15 shadow-[0_6px_24px_rgba(155,77,255,0.30)] transition-all active:scale-[0.98] min-h-[34px] cursor-pointer"
+                className="env-desktop-only flex items-center gap-1.5 px-3.5 py-1.5 bg-gradient-to-br from-[#9B4DFF] to-[#7C3AED] hover:brightness-110 text-white text-[11px] font-mono font-semibold tracking-tight rounded border border-white/15 shadow-[0_6px_24px_rgba(155,77,255,0.30)] transition-all active:scale-[0.98] min-h-[34px] cursor-pointer whitespace-nowrap"
+                title="Novo lançamento"
               >
                 <Plus className="w-3 h-3" />
-                <span>LANÇAMENTO</span>
+                <span className="[@container(inline-size<1000px)]:hidden">LANÇAMENTO</span>
               </button>
             )}
 

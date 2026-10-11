@@ -9,6 +9,7 @@ import { RevenueWorkspace } from '@/components/containers/RevenueWorkspace';
 import { ProspectWorkspace } from '@/components/prospect/ProspectWorkspace';
 import { ModalsContainer } from '@/components/containers/ModalsContainer';
 import { MobileTabBar } from '@/components/containers/MobileTabBar';
+import { useEnvironment, useIsStandalone } from '@/hooks/use-environment';
 
 const emptySubscribe = () => () => {};
 
@@ -24,6 +25,58 @@ function Shell() {
     () => false
   );
   const { ui, setUI, cloud } = useNivra();
+  const env = useEnvironment();
+  const standalone = useIsStandalone();
+
+  // ------------------------------------------------------------
+  // RÉGUA DE 60%: --min-app-width = 60% da tela do usuário.
+  // Desktop fluido entre 100% e 60% da tela; abaixo disso o layout
+  // congela nesta largura e o excesso corta na borda da janela.
+  // ------------------------------------------------------------
+  React.useEffect(() => {
+    const root = document.documentElement;
+    const apply = () => {
+      const minW = Math.round(window.screen.availWidth * 0.6);
+      root.style.setProperty('--min-app-width', `${minW}px`);
+      root.setAttribute('data-env', env);
+    };
+    apply();
+    let raf = 0;
+    const onResize = () => {
+      cancelAnimationFrame(raf);
+      raf = requestAnimationFrame(apply);
+    };
+    window.addEventListener('resize', onResize, { passive: true });
+    return () => {
+      window.removeEventListener('resize', onResize);
+      cancelAnimationFrame(raf);
+    };
+  }, [env]);
+
+  // ------------------------------------------------------------
+  // INSTALADO (standalone): tenta manter a janela >= mínimo.
+  // Navegadores normalmente bloqueiam resizeTo — o fallback é o
+  // congelamento em --min-app-width (CSS, abaixo).
+  // ------------------------------------------------------------
+  React.useEffect(() => {
+    if (!standalone) return;
+    let raf = 0;
+    const enforce = () => {
+      const minW = window.screen.availWidth * 0.6;
+      if (window.innerWidth < minW) {
+        try { window.resizeTo(Math.max(minW, window.innerWidth), window.innerHeight); } catch { /* bloqueado */ }
+      }
+    };
+    const onResize = () => {
+      cancelAnimationFrame(raf);
+      raf = requestAnimationFrame(enforce);
+    };
+    window.addEventListener('resize', onResize, { passive: true });
+    return () => {
+      window.removeEventListener('resize', onResize);
+      cancelAnimationFrame(raf);
+    };
+  }, [standalone]);
 
   const handleIntroComplete = React.useCallback(() => {
     setUI({ showIntroAnimation: false });
@@ -43,7 +96,10 @@ function Shell() {
   }
 
   return (
-    <div className="relative min-h-screen bg-[#07080C] text-[#F0E9FF] selection:bg-[#9B4DFF]/30 selection:text-[#C69BFF] overflow-x-hidden">
+    <div
+      className="relative min-h-screen bg-[#07080C] text-[#F0E9FF] selection:bg-[#9B4DFF]/30 selection:text-[#C69BFF] overflow-x-hidden"
+      style={env === 'desktop' ? { minWidth: 'var(--min-app-width, 920px)' } : undefined}
+    >
       {/* Ambient Atmospheric Lights */}
       <div className="pointer-events-none fixed -top-40 left-1/2 -translate-x-1/2 w-[700px] h-[550px] rounded-full bg-[#9B4DFF]/[0.08] blur-[160px] -z-10" aria-hidden="true" />
       <div className="pointer-events-none fixed top-[45%] -right-40 w-[600px] h-[600px] rounded-full bg-[#7C3AED]/[0.05] blur-[180px] -z-10" aria-hidden="true" />
