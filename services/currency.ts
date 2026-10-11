@@ -4,8 +4,9 @@ export const DEFAULT_EXCHANGE_RATES: ExchangeRates = {
   USD_BRL: 5.40,
   USD_EUR: 0.92,
   EUR_BRL: 5.87,
-  lastUpdated: new Date().toISOString(),
-  isManual: true,
+  // nascemos "velho" e automático: a 1ª abertura já busca cotação real na API
+  lastUpdated: '1970-01-01T00:00:00.000Z',
+  isManual: false,
 };
 
 export const CURRENCY_SYMBOLS: Record<Currency, string> = {

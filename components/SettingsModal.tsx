@@ -80,12 +80,19 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
     const rateEur = parseFloat(usdEur.replace(',', '.')) || 0.92;
     const rateEurBrl = parseFloat(eurBrl.replace(',', '.')) || (rateBrl / rateEur);
 
+    // Manual apenas se o usuário REALMENTE editou os valores (não só re-salvou)
+    const originais = settings.exchangeRates;
+    const editouValores =
+      Math.abs(rateBrl - originais.USD_BRL) > 0.00005 ||
+      Math.abs(rateEur - originais.USD_EUR) > 0.00005 ||
+      Math.abs(rateEurBrl - originais.EUR_BRL) > 0.00005;
+
     const updatedRates: ExchangeRates = {
       USD_BRL: Math.max(0.01, rateBrl),
       USD_EUR: Math.max(0.01, rateEur),
       EUR_BRL: Math.max(0.01, rateEurBrl),
-      lastUpdated: new Date().toISOString(),
-      isManual: true,
+      lastUpdated: editouValores ? new Date().toISOString() : originais.lastUpdated,
+      isManual: editouValores ? true : originais.isManual,
     };
 
     onSaveSettings({
@@ -259,22 +266,57 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                 </div>
               </div>
               <div>
-                {/* Estado da cotação — automática diária ou manual (informativo) */}
-                <div className="flex items-center justify-between gap-2 mb-3 p-2.5 bg-white/[0.02] border border-white/[0.06] rounded">
-                  <span className="text-[10px] text-[#858593] uppercase font-semibold tracking-wider">
-                    Cotação
-                  </span>
-                  <span className="text-[10px] font-mono text-right leading-snug">
-                    {settings.exchangeRates.isManual ? (
-                      <span className="text-amber-300">
-                        Manual · {settings.exchangeRates.lastUpdated?.split('T')[0] || '—'}
-                      </span>
-                    ) : (
-                      <span className="text-emerald-300">
-                        Automática · atualizada {settings.exchangeRates.lastUpdated?.split('T')[0] || '—'}
-                      </span>
-                    )}
-                  </span>
+                {/* Cotação: modo (automática diária / manual travada) + estado */}
+                <div className="mb-3 p-2.5 bg-white/[0.02] border border-white/[0.06] rounded space-y-2">
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (settings.exchangeRates.isManual) {
+                          onSaveSettings({
+                            ...settings,
+                            exchangeRates: { ...settings.exchangeRates, isManual: false },
+                          });
+                          showToast('Cotação automática reativada — atualiza 1x/dia.');
+                        }
+                      }}
+                      className={`py-2 text-[10px] font-mono uppercase rounded border transition-colors ${
+                        !settings.exchangeRates.isManual
+                          ? 'bg-emerald-500/15 border-emerald-500/40 text-emerald-300 font-semibold'
+                          : 'border-white/[0.08] text-[#858593] hover:border-emerald-500/30 cursor-pointer'
+                      }`}
+                    >
+                      Automática (diária)
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (!settings.exchangeRates.isManual) {
+                          onSaveSettings({
+                            ...settings,
+                            exchangeRates: { ...settings.exchangeRates, isManual: true },
+                          });
+                          showToast('Cotação travada manualmente.');
+                        }
+                      }}
+                      className={`py-2 text-[10px] font-mono uppercase rounded border transition-colors ${
+                        settings.exchangeRates.isManual
+                          ? 'bg-amber-500/15 border-amber-500/40 text-amber-300 font-semibold'
+                          : 'border-white/[0.08] text-[#858593] hover:border-amber-500/30 cursor-pointer'
+                      }`}
+                    >
+                      Manual (travada)
+                    </button>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] text-[#858593] uppercase font-semibold tracking-wider">
+                      Última atualização
+                    </span>
+                    <span className="text-[10px] font-mono text-[#A0A0B0]">
+                      {settings.exchangeRates.lastUpdated?.split('T')[0] || '—'}
+                      {settings.exchangeRates.isManual ? ' · suas taxas fixas' : ' · via API'}
+                    </span>
+                  </div>
                 </div>
                 <label className="block text-[#858593] text-[10px] uppercase mb-1">
                   MOEDA PADRÃO DO TERMINAL
