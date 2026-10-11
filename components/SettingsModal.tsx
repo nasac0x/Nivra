@@ -57,9 +57,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   const [activeTab, setActiveTab] = useState<'currencies' | 'categories' | 'backup' | 'danger'>('currencies');
 
   const [usdBrl, setUsdBrl] = useState<string>(String(settings.exchangeRates.USD_BRL));
-  const [usdEur, setUsdEur] = useState<string>(String(settings.exchangeRates.USD_EUR));
   const [eurBrl, setEurBrl] = useState<string>(String(settings.exchangeRates.EUR_BRL));
-  const [defaultCurrency, setDefaultCurrency] = useState<Currency>(settings.defaultCurrency);
 
   const [categories, setCategories] = useState<string[]>([...settings.categories]);
   const [newCatInput, setNewCatInput] = useState<string>('');
@@ -76,20 +74,21 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 
   const handleSaveRates = (e: React.FormEvent) => {
     e.preventDefault();
-    const rateBrl = parseFloat(usdBrl.replace(',', '.')) || 5.40;
-    const rateEur = parseFloat(usdEur.replace(',', '.')) || 0.92;
-    const rateEurBrl = parseFloat(eurBrl.replace(',', '.')) || (rateBrl / rateEur);
+    const rateBrl = parseFloat(usdBrl.replace(',', '.')) || 5.40;   // 1 USD = ? BRL
+    const rateEurBrl = parseFloat(eurBrl.replace(',', '.')) || (rateBrl / 0.92); // 1 EUR = ? BRL
 
-    // Manual apenas se o usuário REALMENTE editou os valores (não só re-salvou)
+    // USD→EUR é derivado: 1 USD vale (USD_BRL / EUR_BRL) euros
+    const rateEur = rateBrl / rateEurBrl;
+
+    // Manual apenas se o usuário REALMENTE editou os campos visíveis
     const originais = settings.exchangeRates;
     const editouValores =
       Math.abs(rateBrl - originais.USD_BRL) > 0.00005 ||
-      Math.abs(rateEur - originais.USD_EUR) > 0.00005 ||
       Math.abs(rateEurBrl - originais.EUR_BRL) > 0.00005;
 
     const updatedRates: ExchangeRates = {
       USD_BRL: Math.max(0.01, rateBrl),
-      USD_EUR: Math.max(0.01, rateEur),
+      USD_EUR: Math.max(0.001, rateEur),
       EUR_BRL: Math.max(0.01, rateEurBrl),
       lastUpdated: editouValores ? new Date().toISOString() : originais.lastUpdated,
       isManual: editouValores ? true : originais.isManual,
@@ -97,7 +96,6 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 
     onSaveSettings({
       ...settings,
-      defaultCurrency,
       exchangeRates: updatedRates,
     });
 
@@ -322,9 +320,9 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                   MOEDA PADRÃO DO TERMINAL
                 </label>
                 <select
-                  value={defaultCurrency}
-                  onChange={(e) => setDefaultCurrency(e.target.value as Currency)}
-                  className="w-full sm:w-64 px-3 py-1.5 bg-[#12151D] border border-white/[0.1] text-white focus:outline-none focus:border-[#9B4DFF]"
+                  value={activeCurrency}
+                  onChange={(e) => onSelectCurrency?.(e.target.value as Currency)}
+                  className="w-full sm:w-2/3 px-3 py-1.5 bg-[#12151D] border border-white/[0.1] text-white focus:outline-none focus:border-[#9B4DFF]"
                 >
                   <option value="USD">USD ($) - Dólar Americano</option>
                   <option value="BRL">BRL (R$) - Real Brasileiro</option>
@@ -333,44 +331,51 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
               </div>
 
               <div className="pt-2 border-t border-white/[0.06]">
-                <div className="flex items-center justify-between mb-3 text-[10px] text-[#858593]">
-                  <span>TAXAS DE CONVERSÃO MANUAIS</span>
+                <div className="flex items-center justify-between mb-1 text-[10px] text-[#858593]">
+                  <span>COTAÇÕES CONTRA O REAL</span>
                   <span>ATUALIZADO: {new Date(settings.exchangeRates.lastUpdated).toLocaleDateString('pt-BR')}</span>
                 </div>
+                <p className="text-[10px] text-[#858593]/80 mb-3 leading-snug">
+                  Edite só se quiser travar valores próprios — a conversão dólar↔euro é
+                  calculada automaticamente a partir destas duas.
+                </p>
 
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-[#858593] text-[10px] mb-1">
-                      USD → BRL (R$)
+                    <label className="block text-[#F2F0F7] text-[11px] mb-1 font-medium">
+                      1 dólar equivale a quantos reais?
                     </label>
-                    <input
-                      type="text"
-                      value={usdBrl}
-                      onChange={(e) => setUsdBrl(e.target.value)}
-                      className="w-full px-2.5 py-1.5 bg-[#12151D] border border-white/[0.1] text-white focus:outline-none focus:border-[#9B4DFF]"
-                    />
+                    <div className="flex items-center gap-2">
+                      <span className="text-[#858593] text-xs font-mono shrink-0">$1 =</span>
+                      <div className="flex items-center flex-1">
+                        <span className="px-2.5 py-1.5 bg-white/[0.04] border border-r-0 border-white/[0.1] text-[#858593] text-xs font-mono">R$</span>
+                        <input
+                          type="text"
+                          inputMode="decimal"
+                          value={usdBrl}
+                          onChange={(e) => setUsdBrl(e.target.value)}
+                          className="flex-1 min-w-0 px-2.5 py-1.5 bg-[#12151D] border border-white/[0.1] text-white focus:outline-none focus:border-[#9B4DFF]"
+                        />
+                      </div>
+                    </div>
                   </div>
                   <div>
-                    <label className="block text-[#858593] text-[10px] mb-1">
-                      USD → EUR (€)
+                    <label className="block text-[#F2F0F7] text-[11px] mb-1 font-medium">
+                      1 euro equivale a quantos reais?
                     </label>
-                    <input
-                      type="text"
-                      value={usdEur}
-                      onChange={(e) => setUsdEur(e.target.value)}
-                      className="w-full px-2.5 py-1.5 bg-[#12151D] border border-white/[0.1] text-white focus:outline-none focus:border-[#9B4DFF]"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-[#858593] text-[10px] mb-1">
-                      EUR → BRL (R$)
-                    </label>
-                    <input
-                      type="text"
-                      value={eurBrl}
-                      onChange={(e) => setEurBrl(e.target.value)}
-                      className="w-full px-2.5 py-1.5 bg-[#12151D] border border-white/[0.1] text-white focus:outline-none focus:border-[#9B4DFF]"
-                    />
+                    <div className="flex items-center gap-2">
+                      <span className="text-[#858593] text-xs font-mono shrink-0">€1 =</span>
+                      <div className="flex items-center flex-1">
+                        <span className="px-2.5 py-1.5 bg-white/[0.04] border border-r-0 border-white/[0.1] text-[#858593] text-xs font-mono">R$</span>
+                        <input
+                          type="text"
+                          inputMode="decimal"
+                          value={eurBrl}
+                          onChange={(e) => setEurBrl(e.target.value)}
+                          className="flex-1 min-w-0 px-2.5 py-1.5 bg-[#12151D] border border-white/[0.1] text-white focus:outline-none focus:border-[#9B4DFF]"
+                        />
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>

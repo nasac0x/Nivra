@@ -133,9 +133,20 @@ export function NivraProvider({ children }: { children: React.ReactNode }) {
   // ---------------- dados ----------------
   const [transactions, setTransactions] = useState<Transaction[]>(() => getStoredTransactions());
   const [settings, setSettings] = useState<UserSettings>(() => getStoredSettings());
-  const [activeCurrency, setActiveCurrency] = useState<Currency>(
+  const [activeCurrency, setActiveCurrencyState] = useState<Currency>(
     () => getStoredSettings().defaultCurrency || 'USD'
   );
+
+  // ÚNICA fonte de verdade da moeda: trocar a moeda ativa também salva
+  // como padrão do terminal (exibição = lançamentos = padrão, um só estado)
+  const setActiveCurrency = useCallback((c: Currency) => {
+    setActiveCurrencyState(c);
+    const fresh = getStoredSettings();
+    if (fresh.defaultCurrency !== c) {
+      saveStoredSettings({ ...fresh, defaultCurrency: c });
+      setSettings(fresh.defaultCurrency ? { ...fresh, defaultCurrency: c } : fresh);
+    }
+  }, []);
   const [currentPeriod, setCurrentPeriod] = useState<DatePeriod>('30d');
   const [customRange, setCustomRange] = useState<{ start: string; end: string }>(() => {
     const today = new Date();
