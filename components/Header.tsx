@@ -162,7 +162,7 @@ export const Header: React.FC<HeaderProps> = ({
                   <button
                     key={p.id}
                     onClick={() => handlePeriodChange(p.id)}
-                    className={`px-2.5 lg:px-3 py-1 text-[11px] rounded transition-all whitespace-nowrap cursor-pointer ${
+                    className={`px-2 xl:px-2.5 py-1.5 text-[11px] rounded transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#9B4DFF]/60 ${
                       isActive
                         ? 'bg-[#9B4DFF]/30 text-[#F0E9FF] border border-[#9B4DFF]/60 font-semibold shadow-[0_0_12px_rgba(155,77,255,0.25)]'
                         : 'text-[#858593] hover:text-[#F0E9FF] hover:bg-white/[0.04] border border-transparent'
@@ -195,7 +195,7 @@ export const Header: React.FC<HeaderProps> = ({
                     <React.Fragment key={curr}>
                       <button
                         onClick={() => onSelectCurrency(curr)}
-                        className={`min-w-[26px] py-0.5 transition-colors font-medium text-center cursor-pointer ${
+                        className={`min-w-[32px] py-1 transition-colors font-medium text-center cursor-pointer rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#9B4DFF]/60 ${
                           isActive
                             ? 'text-[#C69BFF] font-bold'
                             : 'text-[#858593] hover:text-[#F0E9FF]'
@@ -232,7 +232,7 @@ export const Header: React.FC<HeaderProps> = ({
                         className="fixed inset-0 z-40"
                         onClick={() => setShowExportMenu(false)}
                       />
-                      <div className="absolute right-0 mt-2 w-64 bg-[#0E0F16]/95 border border-white/[0.1] shadow-2xl py-1 z-50 text-xs backdrop-blur-2xl rounded-md divide-y divide-white/[0.06]">
+                      <div className="absolute right-0 mt-2 w-64 max-w-[calc(100vw-2rem)] bg-[#0E0F16]/95 border border-white/[0.1] shadow-2xl py-1 z-50 text-xs backdrop-blur-2xl rounded-md divide-y divide-white/[0.06] overscroll-contain">
                         <div className="p-1">
                           <div className="px-3 py-1 text-[10px] text-[#858593] uppercase tracking-wider font-semibold">
                             Período Selecionado
@@ -365,7 +365,7 @@ export const Header: React.FC<HeaderProps> = ({
             {activeWorkspace === 'revenue' && (
               <button
                 onClick={onOpenAddModal}
-                className="hidden md:flex items-center gap-1.5 px-3.5 py-1.5 bg-gradient-to-br from-[#9B4DFF] to-[#7C3AED] hover:brightness-110 text-white text-[11px] font-mono font-semibold tracking-tight rounded border border-white/15 shadow-[0_6px_24px_rgba(155,77,255,0.30)] transition-all active:scale-[0.98] min-h-[34px] cursor-pointer"
+                className="hidden md:flex items-center gap-1.5 px-3 sm:px-3.5 py-1.5 bg-gradient-to-br from-[#9B4DFF] to-[#7C3AED] hover:brightness-110 text-white text-[11px] font-mono font-semibold tracking-tight rounded border border-white/15 shadow-[0_6px_24px_rgba(155,77,255,0.30)] transition-[transform,filter] active:scale-[0.98] min-h-[34px] cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#C69BFF]/70"
               >
                 <Plus className="w-3 h-3" />
                 <span>LANÇAMENTO</span>
