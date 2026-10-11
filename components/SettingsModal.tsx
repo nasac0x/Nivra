@@ -210,7 +210,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
           {activeTab === 'currencies' && (
             <div className="space-y-4">
               {/* MOEDA ATIVA — seletor rápido (visível no mobile, dentro dos Ajustes) */}
-              <div className="p-3 bg-[#12151D] border border-white/[0.06]">
+              <div className="p-3 bg-[#12151D] border border-white/[0.06] rounded-lg">
                 <div className="font-semibold text-[#F2F0F7] uppercase text-[11px] mb-2.5">
                   Moeda de exibição
                 </div>
@@ -234,24 +234,9 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                   })}
                 </div>
               </div>
-              <div>
-                <label className="block text-[#858593] text-[10px] uppercase mb-1">
-                  MOEDA PADRÃO DO TERMINAL
-                </label>
-                <select
-                  value={activeCurrency}
-                  onChange={(e) => onSelectCurrency?.(e.target.value as Currency)}
-                  className="w-full sm:w-2/3 px-3 py-1.5 bg-[#12151D] border border-white/[0.1] text-white focus:outline-none focus:border-[#9B4DFF]"
-                >
-                  <option value="USD">USD ($) - Dólar Americano</option>
-                  <option value="BRL">BRL (R$) - Real Brasileiro</option>
-                  <option value="EUR">EUR (€) - Euro</option>
-                </select>
-              </div>
-
               {/* COTAÇÕES — só leitura, puxadas da API automaticamente */}
-              <div className="pt-2 border-t border-white/[0.06]">
-                <div className="flex items-center justify-between mb-2 text-[10px] text-[#858593]">
+              <div className="p-3 bg-[#12151D] border border-white/[0.06] rounded-lg">
+                <div className="flex items-center justify-between mb-2.5 text-[10px] text-[#858593]">
                   <span className="uppercase font-semibold tracking-wider">Cotações usadas pelo terminal</span>
                   <span className="font-mono">
                     {(() => {
@@ -265,9 +250,6 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                     })()}
                   </span>
                 </div>
-                <p className="text-[10px] text-[#858593]/80 mb-3 leading-snug">
-                  Atualização automática 1x ao dia, direto da API — sem edição manual.
-                </p>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                   <div className="flex items-center justify-between p-2.5 bg-white/[0.02] border border-white/[0.06] rounded">
@@ -283,6 +265,10 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                     </span>
                   </div>
                 </div>
+
+                <p className="text-[10px] text-[#858593]/80 mt-2.5 leading-snug">
+                  Atualização automática 1x ao dia, direto da API — sem edição manual.
+                </p>
               </div>
             </div>
           )}
