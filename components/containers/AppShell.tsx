@@ -25,6 +25,28 @@ function Shell() {
   );
   const { ui, setUI, cloud } = useNivra();
 
+  // ------------------------------------------------------------
+  // AMBIENTE (detecção por PONTEIRO, não por largura):
+  // desktop = mouse/teclado (aba do navegador ou PWA instalada)
+  // mobile  = touch (celular). No desktop a versão mobile NUNCA
+  // aparece — nem com a janela espremida (globals.css força os gates).
+  // ------------------------------------------------------------
+  React.useEffect(() => {
+    const apply = () => {
+      const touch = window.matchMedia('(pointer: coarse)').matches && window.matchMedia('(hover: none)').matches;
+      document.documentElement.setAttribute('data-env', touch ? 'mobile' : 'desktop');
+    };
+    apply();
+    const mqPointer = window.matchMedia('(pointer: coarse)');
+    const mqHover = window.matchMedia('(hover: none)');
+    mqPointer.addEventListener('change', apply);
+    mqHover.addEventListener('change', apply);
+    return () => {
+      mqPointer.removeEventListener('change', apply);
+      mqHover.removeEventListener('change', apply);
+    };
+  }, []);
+
   const handleIntroComplete = React.useCallback(() => {
     setUI({ showIntroAnimation: false });
   }, [setUI]);

@@ -108,7 +108,7 @@ export const Header: React.FC<HeaderProps> = ({
     <>
       <header className="sticky top-0 z-40 w-full border-b border-white/[0.07] bg-[#07080C]/85 backdrop-blur-[20px] select-none transition-all">
         {/* Top Bar */}
-        <div className="mx-auto flex items-center justify-between gap-3 px-4 sm:px-6 lg:px-8 py-3 max-w-[1720px]">
+        <div className="mx-auto flex flex-wrap items-center justify-between gap-x-3 gap-y-2 px-4 sm:px-6 lg:px-8 py-3 max-w-[1720px]">
           
           {/* Brand + Workspace Switcher (desktop — mobile usa a saudação da home) */}
           <div className="hidden md:flex items-center gap-3">

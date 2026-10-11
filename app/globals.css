@@ -150,3 +150,16 @@
 
 /* Puxar da tab bar não seleciona texto */
 nav { -webkit-user-select: none; user-select: none; }
+
+/* ============================================================
+   AMBIENTE (AppShell marca <html data-env="mobile|desktop">):
+   desktop = mouse/teclado (aba do navegador ou PWA instalada).
+   No desktop a versão mobile NUNCA aparece, nem com a janela
+   espremida: componentes md:hidden (só-mobile) desligam à força,
+   e hidden md:* (só-desktop) ficam sempre ligados — a largura da
+   janela não decide mais nada. Mobile = touch, comportamento atual.
+   ============================================================ */
+[data-env="desktop"] .md\:hidden { display: none !important; }
+[data-env="desktop"] .hidden.md\:flex { display: flex !important; }
+[data-env="desktop"] .hidden.md\:block { display: block !important; }
+[data-env="desktop"] .hidden.md\:inline-flex { display: inline-flex !important; }
