@@ -43,14 +43,16 @@ export function MobileTabBar() {
           <span className="text-caption font-mono">Prospecção</span>
         </button>
 
-        {/* FAB central: novo lançamento */}
-        <button
-          onClick={() => openAddModal(null)}
-          className="absolute left-1/2 -translate-x-1/2 -top-6 w-14 h-14 rounded-full bg-[#9B4DFF] text-white flex items-center justify-center border-4 border-[#07080C] shadow-[0_10px_32px_rgba(155,77,255,0.5)] active:scale-90 transition-transform"
-          aria-label="Novo lançamento"
-        >
-          <Plus className="w-6 h-6" strokeWidth={2.6} />
-        </button>
+        {/* FAB central em SLOT PRÓPRIO — 5 colunas iguais, nenhum texto coberto */}
+        <div className="flex-1 relative h-full">
+          <button
+            onClick={() => openAddModal(null)}
+            className="absolute left-1/2 -translate-x-1/2 -top-6 w-14 h-14 rounded-full bg-[#9B4DFF] text-white flex items-center justify-center border-4 border-[#07080C] shadow-[0_10px_32px_rgba(155,77,255,0.5)] active:scale-90 transition-transform"
+            aria-label="Novo lançamento"
+          >
+            <Plus className="w-6 h-6" strokeWidth={2.6} />
+          </button>
+        </div>
 
         <button onClick={goMetas} className={tabBtn(isMetas)} aria-label="Metas">
           <Target className="w-[21px] h-[21px]" strokeWidth={isMetas ? 2.4 : 1.8} />
