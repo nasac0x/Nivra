@@ -72,35 +72,6 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
     setTimeout(() => setToastMessage(null), 3000);
   };
 
-  const handleSaveRates = (e: React.FormEvent) => {
-    e.preventDefault();
-    const rateBrl = parseFloat(usdBrl.replace(',', '.')) || 5.40;   // 1 USD = ? BRL
-    const rateEurBrl = parseFloat(eurBrl.replace(',', '.')) || (rateBrl / 0.92); // 1 EUR = ? BRL
-
-    // USD→EUR é derivado: 1 USD vale (USD_BRL / EUR_BRL) euros
-    const rateEur = rateBrl / rateEurBrl;
-
-    // Manual apenas se o usuário REALMENTE editou os campos visíveis
-    const originais = settings.exchangeRates;
-    const editouValores =
-      Math.abs(rateBrl - originais.USD_BRL) > 0.00005 ||
-      Math.abs(rateEurBrl - originais.EUR_BRL) > 0.00005;
-
-    const updatedRates: ExchangeRates = {
-      USD_BRL: Math.max(0.01, rateBrl),
-      USD_EUR: Math.max(0.001, rateEur),
-      EUR_BRL: Math.max(0.01, rateEurBrl),
-      lastUpdated: editouValores ? new Date().toISOString() : originais.lastUpdated,
-      isManual: editouValores ? true : originais.isManual,
-    };
-
-    onSaveSettings({
-      ...settings,
-      exchangeRates: updatedRates,
-    });
-
-    showToast('Taxas de câmbio salvas localmente.');
-  };
 
   const handleAddCategory = (e: React.FormEvent) => {
     e.preventDefault();
@@ -237,7 +208,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 
           {/* TAB 1: CURRENCIES */}
           {activeTab === 'currencies' && (
-            <form onSubmit={handleSaveRates} className="space-y-4">
+            <div className="space-y-4">
               {/* MOEDA ATIVA — seletor rápido (visível no mobile, dentro dos Ajustes) */}
               <div className="p-3 bg-[#12151D] border border-white/[0.06]">
                 <div className="font-semibold text-[#F2F0F7] uppercase text-[11px] mb-2.5">
@@ -264,58 +235,6 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                 </div>
               </div>
               <div>
-                {/* Cotação: modo (automática diária / manual travada) + estado */}
-                <div className="mb-3 p-2.5 bg-white/[0.02] border border-white/[0.06] rounded space-y-2">
-                  <div className="grid grid-cols-2 gap-2">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        if (settings.exchangeRates.isManual) {
-                          onSaveSettings({
-                            ...settings,
-                            exchangeRates: { ...settings.exchangeRates, isManual: false },
-                          });
-                          showToast('Cotação automática reativada — atualiza 1x/dia.');
-                        }
-                      }}
-                      className={`py-2 text-[10px] font-mono uppercase rounded border transition-colors ${
-                        !settings.exchangeRates.isManual
-                          ? 'bg-emerald-500/15 border-emerald-500/40 text-emerald-300 font-semibold'
-                          : 'border-white/[0.08] text-[#858593] hover:border-emerald-500/30 cursor-pointer'
-                      }`}
-                    >
-                      Automática (diária)
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        if (!settings.exchangeRates.isManual) {
-                          onSaveSettings({
-                            ...settings,
-                            exchangeRates: { ...settings.exchangeRates, isManual: true },
-                          });
-                          showToast('Cotação travada manualmente.');
-                        }
-                      }}
-                      className={`py-2 text-[10px] font-mono uppercase rounded border transition-colors ${
-                        settings.exchangeRates.isManual
-                          ? 'bg-amber-500/15 border-amber-500/40 text-amber-300 font-semibold'
-                          : 'border-white/[0.08] text-[#858593] hover:border-amber-500/30 cursor-pointer'
-                      }`}
-                    >
-                      Manual (travada)
-                    </button>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-[10px] text-[#858593] uppercase font-semibold tracking-wider">
-                      Última atualização
-                    </span>
-                    <span className="text-[10px] font-mono text-[#A0A0B0]">
-                      {settings.exchangeRates.lastUpdated?.split('T')[0] || '—'}
-                      {settings.exchangeRates.isManual ? ' · suas taxas fixas' : ' · via API'}
-                    </span>
-                  </div>
-                </div>
                 <label className="block text-[#858593] text-[10px] uppercase mb-1">
                   MOEDA PADRÃO DO TERMINAL
                 </label>
@@ -330,65 +249,42 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                 </select>
               </div>
 
+              {/* COTAÇÕES — só leitura, puxadas da API automaticamente */}
               <div className="pt-2 border-t border-white/[0.06]">
-                <div className="flex items-center justify-between mb-1 text-[10px] text-[#858593]">
-                  <span>COTAÇÕES CONTRA O REAL</span>
-                  <span>ATUALIZADO: {new Date(settings.exchangeRates.lastUpdated).toLocaleDateString('pt-BR')}</span>
+                <div className="flex items-center justify-between mb-2 text-[10px] text-[#858593]">
+                  <span className="uppercase font-semibold tracking-wider">Cotações usadas pelo terminal</span>
+                  <span className="font-mono">
+                    {(() => {
+                      const d = new Date(settings.exchangeRates.lastUpdated);
+                      if (isNaN(d.getTime())) return '—';
+                      const dd = String(d.getDate()).padStart(2, '0');
+                      const mm = String(d.getMonth() + 1).padStart(2, '0');
+                      const hh = String(d.getHours()).padStart(2, '0');
+                      const mi = String(d.getMinutes()).padStart(2, '0');
+                      return `${dd}/${mm} · ${hh}:${mi}`;
+                    })()}
+                  </span>
                 </div>
                 <p className="text-[10px] text-[#858593]/80 mb-3 leading-snug">
-                  Edite só se quiser travar valores próprios — a conversão dólar↔euro é
-                  calculada automaticamente a partir destas duas.
+                  Atualização automática 1x ao dia, direto da API — sem edição manual.
                 </p>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-[#F2F0F7] text-[11px] mb-1 font-medium">
-                      1 dólar equivale a quantos reais?
-                    </label>
-                    <div className="flex items-center gap-2">
-                      <span className="text-[#858593] text-xs font-mono shrink-0">$1 =</span>
-                      <div className="flex items-center flex-1">
-                        <span className="px-2.5 py-1.5 bg-white/[0.04] border border-r-0 border-white/[0.1] text-[#858593] text-xs font-mono">R$</span>
-                        <input
-                          type="text"
-                          inputMode="decimal"
-                          value={usdBrl}
-                          onChange={(e) => setUsdBrl(e.target.value)}
-                          className="flex-1 min-w-0 px-2.5 py-1.5 bg-[#12151D] border border-white/[0.1] text-white focus:outline-none focus:border-[#9B4DFF]"
-                        />
-                      </div>
-                    </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  <div className="flex items-center justify-between p-2.5 bg-white/[0.02] border border-white/[0.06] rounded">
+                    <span className="text-[11px] text-[#F2F0F7]">$1 dólar</span>
+                    <span className="text-sm font-mono font-semibold text-[#C69BFF]">
+                      R$ {settings.exchangeRates.USD_BRL.toFixed(4)}
+                    </span>
                   </div>
-                  <div>
-                    <label className="block text-[#F2F0F7] text-[11px] mb-1 font-medium">
-                      1 euro equivale a quantos reais?
-                    </label>
-                    <div className="flex items-center gap-2">
-                      <span className="text-[#858593] text-xs font-mono shrink-0">€1 =</span>
-                      <div className="flex items-center flex-1">
-                        <span className="px-2.5 py-1.5 bg-white/[0.04] border border-r-0 border-white/[0.1] text-[#858593] text-xs font-mono">R$</span>
-                        <input
-                          type="text"
-                          inputMode="decimal"
-                          value={eurBrl}
-                          onChange={(e) => setEurBrl(e.target.value)}
-                          className="flex-1 min-w-0 px-2.5 py-1.5 bg-[#12151D] border border-white/[0.1] text-white focus:outline-none focus:border-[#9B4DFF]"
-                        />
-                      </div>
-                    </div>
+                  <div className="flex items-center justify-between p-2.5 bg-white/[0.02] border border-white/[0.06] rounded">
+                    <span className="text-[11px] text-[#F2F0F7]">€1 euro</span>
+                    <span className="text-sm font-mono font-semibold text-[#C69BFF]">
+                      R$ {settings.exchangeRates.EUR_BRL.toFixed(4)}
+                    </span>
                   </div>
                 </div>
               </div>
-
-              <div className="flex justify-end pt-2">
-                <button
-                  type="submit"
-                  className="px-4 py-1.5 bg-[#9B4DFF] hover:bg-[#8738ec] text-white font-semibold"
-                >
-                  SALVAR TAXAS
-                </button>
-              </div>
-            </form>
+            </div>
           )}
 
           {/* TAB 2: CATEGORIES */}
